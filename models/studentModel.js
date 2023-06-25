@@ -1,5 +1,7 @@
 const bookshelf = require('../connection');
+const Internship = require("./internshipDetailsModel")
 const { v4: uuidv4 } = require('uuid');
+const Staff = require('./staffModel')
 
 const bcrypt = require('bcrypt');
 const AppError = require("../utils/appError");
@@ -11,6 +13,12 @@ const Student = bookshelf.model('Student', {
     this.on('creating', this.setID);
     this.on('creating', this.studentIdUnique);
     this.on('saving', this.updatePasswordChangedAt);
+  },
+  internship: function() {
+    return this.hasOne(Internship);
+  },
+  staff: function() {
+    return this.belongsTo(Staff, 'staff_id');
   },
   setID:async function(){
     const uuid = uuidv4(null, null, null);

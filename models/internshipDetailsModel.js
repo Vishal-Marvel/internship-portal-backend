@@ -1,6 +1,6 @@
 const bookshelf = require('../connection');
 const { v4: uuidv4 } = require('uuid');
-
+const Student = require("./studentModel")
 const InternshipDetails = bookshelf.model('InternshipDetails', {
   tableName: 'internship_details',
   initialize: function (){
@@ -9,6 +9,9 @@ const InternshipDetails = bookshelf.model('InternshipDetails', {
   setID:async function(){
     const uuid = uuidv4(null, null, null);
     this.set('id', uuid.toString());
+  },
+  student: function() {
+    return this.belongsTo(Student);
   },
 });
 

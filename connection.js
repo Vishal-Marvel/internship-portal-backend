@@ -29,6 +29,8 @@ knex.schema.hasTable('students').then(exists => {
             table.string('mentor_name');
             table.string('mentor_email');
             table.string('password');
+            table.string('staff_id'); // Add staff_id column for the foreign key
+            table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
         });
     }
 });
@@ -39,7 +41,7 @@ knex.schema.hasTable('staffs').then(exists => {
             table.string('id').primary();
             table.string('name');
             table.string('department');
-            table.string('email');
+            table.string('email').unique();
             table.string('phone_no');
             table.string('role');
             table.string('password');
@@ -62,6 +64,7 @@ knex.schema.hasTable('internships').then(exists => {
             table.string('domain');
             table.string('skills');
             table.string('certificate_of_completion');
+            table.string('student_id').references('students.id').onDelete('CASCADE');
         });
     }
 });

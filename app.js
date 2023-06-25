@@ -31,6 +31,7 @@ const limit = rateLimit({
 });
 
 app.use('/internship/api', limit);
+
 app.use('/internship/api/v1', registerRouter);
 
 if(process.env.NODE_ENV === 'development')

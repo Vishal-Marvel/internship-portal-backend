@@ -1,7 +1,8 @@
-const bookshelf = require('../connection');13
+const bookshelf = require('../connection')
 const { v4: uuidv4 } = require('uuid');
+const Student = require("./studentModel")
 
-const InternshipDetails = bookshelf.model('staffs', {
+const StaffModel = bookshelf.model('staffs', {
     tableName: 'staffs',
     initialize: function (){
         this.on('creating', this.setID);
@@ -11,8 +12,8 @@ const InternshipDetails = bookshelf.model('staffs', {
         this.set('id', uuid.toString());
     },
     students: function() {
-        return this.hasMany(Student);
+        return this.hasMany(Student, 'staff_id');
     },
 });
 
-module.exports = InternshipDetails;
+module.exports = StaffModel;
