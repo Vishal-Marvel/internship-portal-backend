@@ -6,7 +6,7 @@ process.on('uncaughtException', err => {
 })
 
 // Connecting env variables
-dotenv.config({ path: '../config.env' });
+dotenv.config({ path: './config.env' });
 const app = require('./app');
 
 // Start server
