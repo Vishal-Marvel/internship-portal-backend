@@ -19,3 +19,7 @@ exports.signUp = catchAsync(async (req, res) => {
     }
 });
 
+exports.login = catchAsync(async (req,res)=>{
+
+})
+
