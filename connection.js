@@ -6,8 +6,8 @@ const knex = require('knex')({
     connection: {
         host: 'localhost',
         user: 'root',
-        password: 'vishal@sql',
-        database: 'internship_portal'
+        password: process.env.SQL_PASSWORD,
+        database: process.env.DATABASE
     }
 });
 
@@ -18,7 +18,7 @@ const bookshelf = require('bookshelf')(knex);
 knex.schema.hasTable('students').then(exists => {
     if (!exists) {
         return knex.schema.createTable('students', table => {
-            table.increments('id').primary();
+            table.string('id').primary();
             table.string('name');
             table.string('sec_sit');
             table.string('student_id').unique();
@@ -33,10 +33,24 @@ knex.schema.hasTable('students').then(exists => {
     }
 });
 
+knex.schema.hasTable('staffs').then(exists => {
+    if (!exists) {
+        return knex.schema.createTable('staffs', table => {
+            table.string('id').primary();
+            table.string('name');
+            table.string('department');
+            table.string('email');
+            table.string('phone_no');
+            table.string('role');
+            table.string('password');
+        });
+    }
+});
+
 knex.schema.hasTable('internships').then(exists => {
     if (!exists) {
         return knex.schema.createTable('internships', table => {
-            table.increments('id').primary();
+            table.string('id').primary();
             table.string('company_name');
             table.string('sin_tin_gst_no');
             table.string('mode_of_intern');
@@ -44,13 +58,23 @@ knex.schema.hasTable('internships').then(exists => {
             table.date('ending_date');
             table.integer('days_of_internship');
             table.string('location');
-            table.binary('pdf_of_verified_OD_letter');
+            table.string('pdf_of_verified_OD_letter');
             table.string('domain');
             table.string('skills');
-            table.binary('certificate_of_completion');
+            table.string('certificate_of_completion');
         });
     }
 });
+
+knex.schema.hasTable("files").then(exists =>{
+    if (!exists){
+        return knex.schema.createTable('files', table=>{
+            table.string('id').primary();
+            table.string('file_name').unique();
+            table.binary('file');
+        })
+    }
+})
 
 // Export the bookshelf connection
 module.exports = bookshelf;

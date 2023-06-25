@@ -6,7 +6,7 @@ process.on('uncaughtException', err => {
 })
 
 // Connecting env variables
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: '../config.env' });
 const app = require('./app');
 
 // Start server
@@ -17,7 +17,7 @@ const server = app.listen(port, () => {
 
 //For handeling unhandled promise rejection
 process.on('unhandledRejection', err => {
-  // console.log(err.name, err.message);
+  console.log(err.name, err.message);
   console.log('Unhandled Rejection!!! Shutting down...');
   server.close(() => {
       process.exit(1);
