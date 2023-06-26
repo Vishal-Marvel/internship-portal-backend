@@ -6,8 +6,9 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 
-const registerRouter = require('./routes/register');
-
+const studentRouter = require('./routes/studentRouter');
+const staffRouter = require('./routes/staffRouter');
+const internshipRouter = require('./routes/internshipRouter');
 
 const app = express();
 
@@ -32,7 +33,9 @@ const limit = rateLimit({
 
 app.use('/internship/api', limit);
 
-app.use('/internship/api/v1', registerRouter);
+app.use('/internship/api/v1/students', studentRouter);
+app.use('/internship/api/v1/staffs', staffRouter);
+app.use('/internship/api/v1/internships', internshipRouter);
 
 if(process.env.NODE_ENV === 'development')
   app.use(morgan('dev'));

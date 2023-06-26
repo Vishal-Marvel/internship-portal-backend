@@ -3,16 +3,24 @@ const Staff = require('../models/staffModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
-exports.viewStudents = catchAsync(async (req,res)=>{
-    // const staff = await Staff.where({ id: req.params.id }).fetch({ withRelated: 'students' });
+exports.viewStudents = catchAsync(async (req, res) => {
     try {
-        const students = await Student.where({staff_id: req.params.id}).fetchAll()
+        const students = await Student.where({ staff_id: req.params.id }).fetchAll();
+        const studentNames = students.map(student => student.get('name'));
+
         res.status(200).json({
-            data: {students}
+            data: {
+                students: studentNames
+            }
         });
-    }
-    catch (error){
+    } catch (error) {
         const err = new AppError(error.message, 400);
         err.sendResponse(res);
     }
-})
+});
+
+exports.viewStaff = catchAsync(async (req, res) => {
+});
+
+exports.updateStaff = catchAsync(async (req, res) => {
+});

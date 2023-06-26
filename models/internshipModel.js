@@ -2,7 +2,7 @@ const bookshelf = require('../connection');
 const { v4: uuidv4 } = require('uuid');
 const Student = require("./studentModel")
 const InternshipDetails = bookshelf.model('InternshipDetails', {
-  tableName: 'internship_details',
+  tableName: 'internships',
   initialize: function (){
     this.on('creating', this.setID);
   },

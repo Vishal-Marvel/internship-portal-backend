@@ -19,15 +19,33 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             }
         });
     } catch (err) {
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
+        if (err.message === "EmptyResponse"){
+            const error = new AppError("Staff Not Found", 404);
+            error.sendResponse(res);
+        }
+        else {
+            const error = new AppError(err.message, 400);
+            error.sendResponse(res);
+        }
     }
 });
 
 exports.staffSignup = catchAsync(async (req, res) => {
 
     try {
-        const staff = await Staff.forge(req.body).save();
+        const {
+            name,
+            email,
+            department,
+            phone_no
+        } = req.body;
+        const staff = new Staff({
+            name,
+            email,
+            department,
+            phone_no
+        });
+        await staff.save()
 
         res.status(201).json({
             status: 'success',
@@ -40,6 +58,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
         error.sendResponse(res);
     }
 });
+
 
 exports.studentLogin = catchAsync(async (req,res)=>{
     const { email, password } = req.body;

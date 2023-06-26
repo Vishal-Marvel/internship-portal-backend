@@ -1,5 +1,5 @@
 const bookshelf = require('../connection');
-const Internship = require("./internshipDetailsModel")
+const Internship = require("./internshipModel")
 const { v4: uuidv4 } = require('uuid');
 const Staff = require('./staffModel')
 
@@ -54,7 +54,7 @@ const Student = bookshelf.model('Student', {
     const student_id = this.get('student_id');
     const testStudent = await Student.where({ student_id }).fetchAll();
     if (testStudent.length>0){
-      throw Error("Student Id is not Unique");
+      throw Error("Student Id Already Exists");
     }
   }
 
