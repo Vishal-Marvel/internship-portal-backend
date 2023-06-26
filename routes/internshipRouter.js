@@ -9,9 +9,6 @@ router.delete('/:id', internship.deleteInternship);
 router.post('/approval/:id', internship.approveInternship);
 router.post('/send-back/:id', internship.approveInternship);
 router.post('/reject/:id', internship.approveInternship);
-router.get('/hod/:dept', internship.viewInternships);
-router.get('/ceo', internship.viewInternships);
-router.get('/principal', internship.viewInternships);
-router.get('/placement-dean', internship.viewInternships);
+router.get('/all', internship.viewInternships);
 
 module.exports = router;
