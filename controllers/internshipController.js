@@ -100,22 +100,13 @@ exports.updateInternship = catchAsync(async (req,res)=>{
 exports.deleteInternship = catchAsync(async (req,res)=>{
     try {
         const internshipId = req.params.id;
-    
+
         // Find the internship in the database based on the provided ID
-        const internship = await InternshipDetails.findByIdAndDelete(internshipId, { tableName: 'internships' });
-    
-        if (!internship) {
-          // If the internship with the provided ID is not found, return an error response
-          return res.status(404).json({
-            status: 'fail',
-            message: 'Internship not found',
-          });
-        }
-    
-    
+        await InternshipDetails.findByIdAndDelete(internshipId, {tableName: 'internships'});
+
     
         // Send a success response
-        res.status(204).json({
+        res.status(200).json({
           status: 'success',
           message: 'Internship deleted successfully',
           
