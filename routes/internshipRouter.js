@@ -13,5 +13,4 @@ router.get('/hod/:dept', internship.viewInternships);
 router.get('/ceo', internship.viewInternships);
 router.get('/principal', internship.viewInternships);
 router.get('/placement-dean', internship.viewInternships);
-
 module.exports = router;

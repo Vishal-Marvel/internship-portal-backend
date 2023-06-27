@@ -61,11 +61,70 @@ exports.viewInternships = catchAsync(async (req,res)=>{
 });
 
 exports.updateInternship = catchAsync(async (req,res)=>{
-
+    try {
+        const internshipId = req.params.id;
+        const updatedData = req.body;
+    
+        // Find the internship in the database based on the provided ID
+        const internship = await InternshipDetails.findByIdAndUpdate(internshipId, updatedData, {
+            new: true, // Return the updated document
+            runValidators: true, // Run the validation on the updated fields
+            tableName: 'internships' // Specify the table name
+          });
+    
+        if (!internship) {
+          // If the internship with the provided ID is not found, return an error response
+          return res.status(404).json({
+            status: 'fail',
+            message: 'Internship not found',
+          });
+        }
+    
+        
+    
+        // Send a success response
+        res.status(200).json({
+          status: 'success',
+          message: 'Internship details updated successfully',
+          data: {
+            internship,
+          },
+        });
+      } catch (err) {
+        // Handle any errors that occur during the process
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+      }
 });
 
 exports.deleteInternship = catchAsync(async (req,res)=>{
-
+    try {
+        const internshipId = req.params.id;
+    
+        // Find the internship in the database based on the provided ID
+        const internship = await InternshipDetails.findByIdAndDelete(internshipId, { tableName: 'internships' });
+    
+        if (!internship) {
+          // If the internship with the provided ID is not found, return an error response
+          return res.status(404).json({
+            status: 'fail',
+            message: 'Internship not found',
+          });
+        }
+    
+    
+    
+        // Send a success response
+        res.status(204).json({
+          status: 'success',
+          message: 'Internship deleted successfully',
+          
+        });
+      } catch (err) {
+        // Handle any errors that occur during the process
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+      }
 });
 
 exports.approveInternship = catchAsync(async (req,res)=>{
