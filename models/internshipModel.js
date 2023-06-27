@@ -15,4 +15,29 @@ const InternshipDetails = bookshelf.model('InternshipDetails', {
   },
 });
 
+InternshipDetails.findByIdAndUpdate = async function (id, updatedData) {
+  try {
+    const internship = await InternshipDetails.where({ id }).fetch();
+    if (!internship) {
+      throw new Error('Internship not found');
+    }
+    await internship.save(updatedData);
+    return internship;
+  } catch (err) {
+    throw err;
+  }
+};
+
+InternshipDetails.findByIdAndDelete = async function (id) {
+  try {
+    const internship = await InternshipDetails.where({ id }).fetch();
+    if (!internship) {
+      throw new Error('Internship not found');
+    }
+    await internship.destroy();
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = InternshipDetails;
