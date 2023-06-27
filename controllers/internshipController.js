@@ -1,4 +1,5 @@
 const InternshipDetails = require("../models/internshipModel")
+const Approval = require("../models/approvalModel")
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
@@ -13,11 +14,11 @@ exports.registerInternship = catchAsync(async (req, res) => {
             ending_date,
             days_of_internship,
             location,
-            pdf_of_verified_OD_letter,
+            offer_letter,
             domain,
-            skills,
             certificate_of_completion
         } = req.body;
+        const student_id = req.user.id;
 
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
@@ -28,14 +29,19 @@ exports.registerInternship = catchAsync(async (req, res) => {
             ending_date,
             days_of_internship,
             location,
-            pdf_of_verified_OD_letter,
+            offer_letter,
             domain,
-            skills,
-            certificate_of_completion
+            certificate_of_completion,
+            student_id
         });
 
         // Save the internship details to the database
         await internshipDetails.save();
+        const id = internshipDetails.get('id');
+        const approval = new Approval({
+            internship_id:id
+        });
+        await approval.save();
 
         // Send a success response
         res.status(201).json({
@@ -47,8 +53,9 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
     } catch (err) {
         // Handle any errors that occur during the process
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
+        // const error = new AppError(err.message, 400);
+        // error.sendResponse(res);
+        throw err;
     }
 });
 
@@ -79,9 +86,6 @@ exports.updateInternship = catchAsync(async (req,res)=>{
             message: 'Internship not found',
           });
         }
-    
-        
-    
         // Send a success response
         res.status(200).json({
           status: 'success',
@@ -119,11 +123,67 @@ exports.deleteInternship = catchAsync(async (req,res)=>{
 });
 
 exports.approveInternship = catchAsync(async (req,res)=>{
+    try {
+        // const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const approval = await Approval.where({internship_id: req.params.id}).fetch();
+        console.log(approval);
+        if (req.user.role === "mentor"){
+            approval.save({mentor:true});
+            res.status(200).json({
+                status: 'success',
+                message: 'Mentor - Internship approved'
+            });
+        }
+        if (req.user.role === "hod"){
+            approval.save({hod:true});
+            res.status(200).json({
+                status: 'success',
+                message: 'HOD - Internship approved'
+            });
+        }
+        if (req.user.role === "tap-cell"){
+            approval.save({tap_cell:true});
+            res.status(200).json({
+                status: 'success',
+                message: 'Tap-Cell - Internship approved'
+            });
+        }
+        if (req.user.role === "principal"){
+            approval.save({principal:true});
+            res.status(200).json({
+                status: 'success',
+                message: 'Principal - Internship approved'
+            });
+        }
+    }
+    catch (err){
+        // Handle any errors that occur during the process
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+
+    }
 
 });
 
 exports.sendBack = catchAsync(async (req,res)=>{
+    try {
+        // const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const approval = await Approval.where({internship_id: req.params.id}).fetch();
+        const comments = req.body.comments;
+        await approval.save({comments})
+        res.status(200).json({
+            status: 'success',
+            message: 'Comment Added and Sent Back'
+        });
 
+
+    }
+    catch (err){
+        // Handle any errors that occur during the process
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+
+    }
 });
 
 exports.reject = catchAsync(async (req,res)=>{

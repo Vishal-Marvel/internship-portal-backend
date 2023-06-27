@@ -2,16 +2,37 @@ const Student = require('../models/studentModel');
 const Staff = require('../models/staffModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const jwt = require("jsonwebtoken");
 
 
 // Signup function
 exports.studentSignUp = catchAsync(async (req, res) => {
 
     try {
-        const email = req.body.mentor_email;
-        const staff = await Staff.where({email:email}).fetch();
+        const staff = await Staff.where({email:req.body.mentor_email}).fetch();
         req.body.staff_id = staff.id;
-        const student = await Student.forge(req.body).save();
+        req.body.role = "student";
+        const {
+            name,
+            email,
+            password,
+            sec_sit,
+            student_id,
+            register_num,
+            department,
+            staff_id
+        } = req.body;
+        const student = new Student({
+            name,
+            email,
+            password,
+            sec_sit,
+            student_id,
+            register_num,
+            department,
+            staff_id
+        })
+        await student.save();
         res.status(201).json({
             status: 'success',
             data: {
@@ -28,7 +49,7 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             error.sendResponse(res);
         }
     }
-});
+})
 
 exports.staffSignup = catchAsync(async (req, res) => {
 
@@ -37,13 +58,17 @@ exports.staffSignup = catchAsync(async (req, res) => {
             name,
             email,
             department,
-            phone_no
+            phone_no,
+            role,
+            password
         } = req.body;
         const staff = new Staff({
             name,
             email,
             department,
-            phone_no
+            phone_no,
+            role,
+            password
         });
         await staff.save()
 
@@ -57,79 +82,154 @@ exports.staffSignup = catchAsync(async (req, res) => {
         const error = new AppError(err.message, 400);
         error.sendResponse(res);
     }
-});
-
-
-exports.studentLogin = catchAsync(async (req,res)=>{
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return next(new AppError('Please provide both email and password', 400));
-    }
-
-    const student = await Student.where({ email }).fetch();
-
-    if (!student || !(await student.verifyPassword(password))) {
-        res.status(400).json({
-            status: 'fail',
-            message: 'Incorrect Username or Password'
-        });
-        return;
-    }
-
-    const token = jwt.sign({ id: student.get('id') }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRESIN
-    });
-
-    const cookieOptions = {
-        expires: new Date(Date.now() + process.env.COOKIE_EXPIRESIN * 24 * 60 * 60 * 1000),
-        httpOnly: true
-    };
-
-    res.cookie('jwt', token, cookieOptions);
-
-    res.status(200).json({
-        status: 'success',
-        data: {
-            token,
-            student
-        }
-    });
 })
 
-exports.staffLogin = catchAsync(async (req,res)=>{
+exports.studentLogin = catchAsync(async (req,res, next)=>{
     const { email, password } = req.body;
 
     if (!email || !password) {
         return next(new AppError('Please provide both email and password', 400));
     }
+    try {
+        const student = await Student.where({email}).fetch();
 
-    const student = await Staff.where({ email }).fetch();
+        if (!(await student.verifyPassword(password))) {
+            res.status(400).json({
+                status: 'fail',
+                message: 'Incorrect Username or Password'
+            });
+            return;
+        }
 
-    if (!student || !(await student.verifyPassword(password))) {
-        res.status(400).json({
-            status: 'fail',
-            message: 'Incorrect Username or Password'
+        const token = jwt.sign({id: student.get('id'), role: "student"}, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRESIN
         });
+
+        const cookieOptions = {
+            expires: new Date(Date.now() + (process.env.COOKIE_EXPIRESIN * 60 * 60 * 1000)),
+            httpOnly: true
+        };
+
+        res.cookie('jwt', token, cookieOptions);
+
+        const role = "student";
+        res.status(200).json({
+            status: 'success',
+            data: {
+                token,
+                role
+            }
+        });
+    } catch (err) {
+        if (err.message === "EmptyResponse") {
+            const error = new AppError("Student Not Found", 404);
+            error.sendResponse(res);
+        }
+        // throw err;
+        else{
+            const error = new AppError(err.message, 400);
+            error.sendResponse(res);
+        }
+    }
+})
+
+exports.staffLogin = catchAsync(async (req,res, next)=>{
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return next(new AppError('Please provide both email and password', 400));
+    }
+    try {
+        const staff = await Staff.where({email}).fetch();
+
+        if (!(await staff.verifyPassword(password))) {
+            res.status(400).json({
+                status: 'fail',
+                message: 'Incorrect Username or Password'
+            });
+            return;
+        }
+
+        const token = jwt.sign({id: staff.get('id'), role: staff.get('role')}, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRESIN
+        });
+
+        const cookieOptions = {
+            expires: new Date(Date.now() + process.env.COOKIE_EXPIRESIN * 60 * 60 * 1000),
+            httpOnly: true
+        };
+        const role = staff.get('role');
+
+        res.cookie('jwt', token, cookieOptions);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                token,
+                role
+            }
+        });
+    } catch (err) {
+        if (err.message === "EmptyResponse") {
+            const error = new AppError("Staff Not Found", 404);
+            error.sendResponse(res);
+        }
+        throw err;
+    }
+})
+
+exports.protect = catchAsync(async (req, res, next) => {
+    let token;
+    // Get token
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt) {
+        token = req.cookies.jwt;
+    }
+
+    // Token not present
+    if (!token) {
+        const err = new AppError('Log In First', 401);
+        err.sendResponse(res);
         return;
     }
 
-    const token = jwt.sign({ id: student.get('id') }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRESIN
-    });
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = decoded.role;
+    // console.log(decoded);
+    let user = null;
+    // Check if user exists
+    if (role === "student")
+        user = await Student.where({ id: decoded.id }).fetch();
+    else {
+        user = await Staff.where({id: decoded.id}).fetch();
+    }
 
-    const cookieOptions = {
-        expires: new Date(Date.now() + process.env.COOKIE_EXPIRESIN * 24 * 60 * 60 * 1000),
-        httpOnly: true
-    };
+    if (!user) {
+        const err = new AppError('User does not exist', 401);
+        err.sendResponse(res);
+        return;
+    }
+    const responseUser = {
+        name: user.get('name'),
+        role: role,
+        id: user.get('id'),
+        department : user.get('department')
+    }
+    // Set student on req
+    req.user = responseUser;
+    res.locals.user = responseUser;
 
-    res.cookie('jwt', token, cookieOptions);
-
-    res.status(200).json({
-        status: 'success',
-        data: {
-            token,
-            student
-        }
-    });
+    next();
 });
+
+exports.restrictTo = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return next(new AppError('You are not authorized to perform this action', 403));
+        }
+
+        next();
+    };
+};

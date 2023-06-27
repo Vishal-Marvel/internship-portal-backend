@@ -23,12 +23,12 @@ knex.schema.hasTable('students').then(exists => {
             table.string('sec_sit');
             table.string('student_id').unique();
             table.integer('year_of_studying');
+            table.string('register_num');
             table.string('department');
-            table.string('email');
+            table.string('email').unique();
             table.string('phone_no');
-            table.string('mentor_name');
-            table.string('mentor_email');
             table.string('password');
+            table.string('skills');
             table.string('staff_id'); // Add staff_id column for the foreign key
             table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
         });
@@ -54,20 +54,40 @@ knex.schema.hasTable('internships').then(exists => {
         return knex.schema.createTable('internships', table => {
             table.string('id').primary();
             table.string('company_name');
+            table.string('company_address');
+            table.string('company_ph_no');
+            table.string('current_cgpa');
             table.string('sin_tin_gst_no');
+            table.string('industry_supervisor_name');
+            table.string('industry_supervisor_ph_no');
             table.string('mode_of_intern');
             table.date('starting_date');
             table.date('ending_date');
             table.integer('days_of_internship');
             table.string('location');
-            table.string('pdf_of_verified_OD_letter');
             table.string('domain');
-            table.string('skills');
             table.string('certificate_of_completion');
+            table.string('offer_letter');
             table.string('student_id').references('students.id').onDelete('CASCADE');
         });
     }
 });
+
+
+knex.schema.hasTable("approval").then(exists=>{
+    if (!exists){
+        return knex.schema.createTable("approval",table=>{
+            table.string('id').primary()
+            table.boolean('mentor')
+            table.boolean('hod')
+            table.boolean('tap_cell')
+            table.boolean('principal')
+            table.string('comments')
+            table.string('internship_id').references('internships.id').onDelete('CASCADE');
+
+        })
+    }
+})
 
 knex.schema.hasTable("files").then(exists =>{
     if (!exists){

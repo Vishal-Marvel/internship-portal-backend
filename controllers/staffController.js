@@ -5,7 +5,7 @@ const AppError = require('../utils/appError');
 
 exports.viewStudents = catchAsync(async (req, res) => {
     try {
-        const students = await Student.where({ staff_id: req.params.id }).fetchAll();
+        const students = await Student.where({ staff_id: req.user.id }).fetchAll();
         const studentNames = students.map(student => student.get('name'));
 
         res.status(200).json({

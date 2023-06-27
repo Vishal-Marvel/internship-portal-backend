@@ -5,6 +5,9 @@ const staffController = require('../controllers/staffController');
 
 router.post('/signup', authController.staffSignup);
 router.post('/login', authController.staffLogin);
+
+router.use(authController.protect);
+router.use(authController.restrictTo("mentor", "hod", "tap-cell", "principal"));
 router.get('/students', staffController.viewStudents);
 router.get('/', staffController.viewStaff);
 router.put('/', staffController.updateStaff);

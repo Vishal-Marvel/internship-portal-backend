@@ -10,7 +10,7 @@ const InternshipDetails = bookshelf.model('InternshipDetails', {
     const uuid = uuidv4(null, null, null);
     this.set('id', uuid.toString());
   },
-  student: function() {
+  student_id: function() {
     return this.belongsTo(Student);
   },
 });
