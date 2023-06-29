@@ -5,7 +5,9 @@
   "description": "Student Internship Portal",
   "main": "app.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "migrate": "knex migrate:latest --knexfile db/knexfile.js",
+    "create-migrate" : "knex migrate:make migration --knexfile db/knexfile.js"
   },
   "devDependencies": {
     "@babel/core": "^7.22.5",

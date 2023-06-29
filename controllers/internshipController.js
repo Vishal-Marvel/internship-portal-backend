@@ -5,33 +5,45 @@ const AppError = require('../utils/appError');
 
 exports.registerInternship = catchAsync(async (req, res) => {
     try {
+        if (req.user.role === "student"){
+
+        }
+
         // Retrieve the submitted data from the request body
         const {
             company_name,
+            company_address,
+            company_ph_no,
+            current_cgpa,
             sin_tin_gst_no,
+            industry_supervisor_name,
+            industry_supervisor_ph_no,
             mode_of_intern,
             starting_date,
             ending_date,
             days_of_internship,
             location,
-            offer_letter,
             domain,
-            certificate_of_completion
+            offer_letter
         } = req.body;
         const student_id = req.user.id;
 
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
             company_name,
+            company_address,
+            company_ph_no,
+            current_cgpa,
             sin_tin_gst_no,
+            industry_supervisor_name,
+            industry_supervisor_ph_no,
             mode_of_intern,
             starting_date,
             ending_date,
             days_of_internship,
             location,
-            offer_letter,
             domain,
-            certificate_of_completion,
+            offer_letter,
             student_id
         });
 
@@ -126,35 +138,48 @@ exports.approveInternship = catchAsync(async (req,res)=>{
     try {
         // const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
-        console.log(approval);
-        if (req.user.role === "mentor"){
-            approval.save({mentor:true});
+        if (req.user.role === "mentor") {
+            approval.set({ mentor: true });
+            await approval.save();
             res.status(200).json({
-                status: 'success',
-                message: 'Mentor - Internship approved'
+                status: "success",
+                message: "Mentor - approved",
+            });
+        } else if (req.user.role === "internship_coordinator" && approval.get("mentor")) {
+            approval.set({ internship_coordinator: true });
+            await approval.save();
+            res.status(200).json({
+                status: "success",
+                message: "Internship Coordinator - approved",
+            });
+        } else if (req.user.role === "hod" && approval.get("mentor") && approval.get("internship_coordinator")) {
+            approval.set({ hod: true });
+            await approval.save();
+            res.status(200).json({
+                status: "success",
+                message: "HOD - approved",
+            });
+        } else if (req.user.role === "tap-cell" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod")) {
+            approval.set({ tap_cell: true });
+            await approval.save();
+            res.status(200).json({
+                status: "success",
+                message: "Tap-Cell - approved",
+            });
+        } else if (req.user.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
+            approval.set({ principal: true });
+            await approval.save();
+            res.status(200).json({
+                status: "success",
+                message: "Principal - approved",
+            });
+        } else {
+            res.status(406).json({
+                status: "fail",
+                message: "You cant approve the internship right now",
             });
         }
-        if (req.user.role === "hod"){
-            approval.save({hod:true});
-            res.status(200).json({
-                status: 'success',
-                message: 'HOD - Internship approved'
-            });
-        }
-        if (req.user.role === "tap-cell"){
-            approval.save({tap_cell:true});
-            res.status(200).json({
-                status: 'success',
-                message: 'Tap-Cell - Internship approved'
-            });
-        }
-        if (req.user.role === "principal"){
-            approval.save({principal:true});
-            res.status(200).json({
-                status: 'success',
-                message: 'Principal - Internship approved'
-            });
-        }
+
     }
     catch (err){
         // Handle any errors that occur during the process
@@ -185,6 +210,31 @@ exports.sendBack = catchAsync(async (req,res)=>{
 
     }
 });
+
+exports.getApprovalStatus = catchAsync(async (req, res)=>{
+    try {
+        const approval = await Approval.where({internship_id: req.params.id}).fetch();
+        const approval_status = {
+            mentor: approval.get('mentor'),
+            internship_coordinator: approval.get('internship_coordinator'),
+            hod: approval.get('hod'),
+            tap_cell: approval.get('tap_cell'),
+            principal: approval.get('principal'),
+            comments: approval.get('comments'),
+
+        }
+        res.status(200).json({
+            status: 'success',
+            data: {
+                approval_status
+            }
+        });
+    }
+    catch (e){
+        const error = new AppError(e.message, 400);
+        error.sendResponse(res);
+    }
+})
 
 exports.reject = catchAsync(async (req,res)=>{
 
