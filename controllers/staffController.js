@@ -24,3 +24,6 @@ exports.viewStaff = catchAsync(async (req, res) => {
 
 exports.updateStaff = catchAsync(async (req, res) => {
 });
+
+exports.deleteStaff = catchAsync(async (req, res) => {
+});

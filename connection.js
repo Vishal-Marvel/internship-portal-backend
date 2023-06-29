@@ -1,15 +1,9 @@
 // Install the bookshelf, knex, and mysql packages
 // npm install bookshelf knex mysql
-
-const knex = require('knex')({
-    client: 'mysql',
-    connection: {
-        host: 'localhost',
-        user: 'root',
-        password: process.env.SQL_PASSWORD,
-        database: process.env.DATABASE
-    }
-});
+const dotenv = require("dotenv");
+dotenv.config({ path: './config.env' });
+const knexConfig = require('./db/knexfile');
+const knex = require('knex')(knexConfig[process.env.NODE_ENV]);
 
 const bookshelf = require('bookshelf')(knex);
 
@@ -28,7 +22,13 @@ knex.schema.hasTable('students').then(exists => {
             table.string('email').unique();
             table.string('phone_no');
             table.string('password');
-            table.string('skills');
+            table.integer('total_days_internship');
+            table.integer('internship_days_year1');
+            table.integer('internship_days_year2');
+            table.integer('internship_days_year3');
+            table.integer('internship_days_year4');
+            table.boolean('placement_status');
+            // table.string('skills');
             table.string('staff_id'); // Add staff_id column for the foreign key
             table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
         });
@@ -41,6 +41,7 @@ knex.schema.hasTable('staffs').then(exists => {
             table.string('id').primary();
             table.string('name');
             table.string('department');
+            table.string('sec_sit');
             table.string('email').unique();
             table.string('phone_no');
             table.string('role');
@@ -58,6 +59,7 @@ knex.schema.hasTable('internships').then(exists => {
             table.string('company_ph_no');
             table.string('current_cgpa');
             table.string('sin_tin_gst_no');
+            table.string('academic_year');
             table.string('industry_supervisor_name');
             table.string('industry_supervisor_ph_no');
             table.string('mode_of_intern');
@@ -79,6 +81,7 @@ knex.schema.hasTable("approval").then(exists=>{
         return knex.schema.createTable("approval",table=>{
             table.string('id').primary()
             table.boolean('mentor')
+            table.boolean('internship_coordinator')
             table.boolean('hod')
             table.boolean('tap_cell')
             table.boolean('principal')

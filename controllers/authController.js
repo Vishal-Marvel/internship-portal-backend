@@ -14,22 +14,26 @@ exports.studentSignUp = catchAsync(async (req, res) => {
         req.body.role = "student";
         const {
             name,
-            email,
-            password,
             sec_sit,
             student_id,
+            year_of_studying,
             register_num,
             department,
+            email,
+            phone_no,
+            password,
             staff_id
         } = req.body;
         const student = new Student({
             name,
-            email,
-            password,
             sec_sit,
             student_id,
+            year_of_studying,
             register_num,
             department,
+            email,
+            phone_no,
+            password,
             staff_id
         })
         await student.save();
@@ -56,16 +60,18 @@ exports.staffSignup = catchAsync(async (req, res) => {
     try {
         const {
             name,
-            email,
             department,
+            email,
+            sec_sit,
             phone_no,
             role,
             password
         } = req.body;
         const staff = new Staff({
             name,
-            email,
             department,
+            email,
+            sec_sit,
             phone_no,
             role,
             password
