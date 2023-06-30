@@ -30,3 +30,4 @@ process.on('SIGTERM', () => {
       console.log('Process Terminated');
   })
 })
+

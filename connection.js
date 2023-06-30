@@ -8,7 +8,7 @@ const knex = require('knex')(knexConfig[process.env.NODE_ENV]);
 const bookshelf = require('bookshelf')(knex);
 
 // Check if the table exists, and create it if it doesn't
-
+// Check is your files are there..
 knex.schema.hasTable('students').then(exists => {
     if (!exists) {
         return knex.schema.createTable('students', table => {
