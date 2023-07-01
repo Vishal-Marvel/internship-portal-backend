@@ -8,7 +8,7 @@ const oAuth2Client = new OAuth2Client({
   clientSecret: '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',
   redirectUri: 'https://developers.google.com/oauthplayground',
 });
-REFRESH_TOKEN = '1//04OrofRMe5t2ICgYIARAAGAQSNwF-L9IrISXPqmvB3a3jND3BQvxRfPncfss203WPjvHAl7S1c4u251lrI5JtmP5mZhOw5yMFTfE'
+REFRESH_TOKEN ='1//04OrofRMe5t2ICgYIARAAGAQSNwF-L9IrISXPqmvB3a3jND3BQvxRfPncfss203WPjvHAl7S1c4u251lrI5JtmP5mZhOw5yMFTfE'
 oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
 // Set up the Gmail API
@@ -29,9 +29,9 @@ async function sendEmail(recipientEmail, subject, content) {
       auth: {
         type: 'OAuth2',
         user: 'padmapriyas.2004@gmail.com',
-        clientId: '972145103272-dmn1oa6nlm06ik7pd5v4uh6c869ougva.apps.googleusercontent.com',
-        clientSecret: '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',
-        refreshToken: '1//04OrofRMe5t2ICgYIARAAGAQSNwF-L9IrISXPqmvB3a3jND3BQvxRfPncfss203WPjvHAl7S1c4u251lrI5JtmP5mZhOw5yMFTfE',
+        clientId: '571856393657-g1jninnif81gaoeiks72jd12kn4gc104.apps.googleusercontent.com',
+        clientSecret: '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',
+        refreshToken:'1//04BIXPNw1PcVpCgYIARAAGAQSNwF-L9IrR7R_DYx-i9zc7_P4OlDV53LqX58t0YOtG-DKGI4O4gQY31t2MlAZLA4KWR8ViT3bjqY',
         accessToken: token,
       },
     });
@@ -55,5 +55,12 @@ async function sendEmail(recipientEmail, subject, content) {
 module.exports = {
   sendEmail,
 };
-sendEmail('spmfp1357@gmail.com', 'Test Email', 'This is a test email.');
+//call the sendEmail function
+sendEmail('spmfp1357@gmail.com', 'Test Email', 'This is a test email.').then(() => {
+    console.log('Email sent successfully');
+  })
+  .catch((error) => {
+    console.error('Error sending email:', error);
+  });
+
 
