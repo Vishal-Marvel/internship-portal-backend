@@ -2,12 +2,14 @@ const InternshipDetails = require("../models/internshipModel")
 const Approval = require("../models/approvalModel")
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const {sendEmail} = require("../utils/mail");
+const Student = require("../models/studentModel");
+const Staff = require("../models/staffModel");
+const fs = require('fs');
+const {generateInternshipDetails} = require("../utils/pdfGenerator");
 
 exports.registerInternship = catchAsync(async (req, res) => {
     try {
-        if (req.user.role === "student"){
-
-        }
 
         // Retrieve the submitted data from the request body
         const {
@@ -27,6 +29,16 @@ exports.registerInternship = catchAsync(async (req, res) => {
             offer_letter
         } = req.body;
         const student_id = req.user.id;
+        if (req.user.role === "student"){
+            const student = await Student.where({id:req.user.id}).fetch();
+            if (student.get('total_days_internship')+days_of_internship >45 && !student.get('placement_status')){
+                res.status(400).json({
+                    status:"failed",
+                    message:"Internship Days Exceeded"
+                })
+                return;
+            }
+        }
 
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
@@ -55,7 +67,14 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
         await approval.save();
 
-        // Send a success response
+        const student = await Student.where({id: req.user.id}).fetch();
+        const staff = await Staff.where({id: student.get('staff_id')}).fetch();
+
+        await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
+            , "Internship Registered by:\n " + student.get('name') + "\n\n" + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+
+            // Send a success response
+
         res.status(201).json({
             status: 'success',
             message: 'Internship details registered successfully',
@@ -136,11 +155,23 @@ exports.deleteInternship = catchAsync(async (req,res)=>{
 
 exports.approveInternship = catchAsync(async (req,res)=>{
     try {
-        // const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const student = await Student.where({id: internship.get('student_id')}).fetch();
+
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
         if (req.user.role === "mentor") {
             approval.set({ mentor: true });
             await approval.save();
+            const staff = await Staff.where({role: 'internship_coordinator', department:req.user.department}).fetchAll();
+            const staffEmails = staff.map(staffMember => staffMember.get('email'));
+            for (const email of staffEmails) {
+                await sendEmail(email, "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+
+            }
+
+
             res.status(200).json({
                 status: "success",
                 message: "Mentor - approved",
@@ -179,7 +210,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "You cant approve the internship right now",
             });
         }
-
+        // const internship = await InternshipDetails.where({id:req.params.id}).fetch();
+        // const student = await Student.where({id:internship.get('student_id')}).fetch();
     }
     catch (err){
         // Handle any errors that occur during the process
@@ -239,3 +271,14 @@ exports.getApprovalStatus = catchAsync(async (req, res)=>{
 exports.reject = catchAsync(async (req,res)=>{
 
 });
+
+exports.downloadReport = catchAsync(async (req, res) =>{
+    try{
+        const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        generateInternshipDetails(internship);
+    }
+    catch(e){
+        const err = new AppError(e.message, 404);
+        err.sendResponse(res);
+    }
+})

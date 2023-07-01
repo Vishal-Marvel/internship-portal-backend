@@ -8,7 +8,6 @@ const knex = require('knex')(knexConfig[process.env.NODE_ENV]);
 const bookshelf = require('bookshelf')(knex);
 
 // Check if the table exists, and create it if it doesn't
-// Check is your files are there..
 knex.schema.hasTable('students').then(exists => {
     if (!exists) {
         return knex.schema.createTable('students', table => {
@@ -23,11 +22,8 @@ knex.schema.hasTable('students').then(exists => {
             table.string('phone_no');
             table.string('password');
             table.integer('total_days_internship');
-            table.integer('internship_days_year1');
-            table.integer('internship_days_year2');
-            table.integer('internship_days_year3');
-            table.integer('internship_days_year4');
             table.boolean('placement_status');
+            table.string('placed_company');
             // table.string('skills');
             table.string('staff_id'); // Add staff_id column for the foreign key
             table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
