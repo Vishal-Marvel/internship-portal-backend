@@ -17,5 +17,5 @@ router.post('/approval/:id', internship.approveInternship);
 router.post('/send-back/:id', internship.sendBack);
 router.post('/reject/:id', internship.reject);
 router.get('/all', internship.viewInternships);
-
+router.get('/download-report/:id', internship.downloadReport);
 module.exports = router;
