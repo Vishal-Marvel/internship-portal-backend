@@ -7,17 +7,23 @@ const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
 const fs = require('fs');
 const {generateInternshipDetails} = require("../utils/pdfGenerator");
+const pdfFilePath = "\pdf_file\\report.pdf";
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 exports.registerInternship = catchAsync(async (req, res) => {
     try {
 
         // Retrieve the submitted data from the request body
-        const {
+        let {
             company_name,
             company_address,
             company_ph_no,
             current_cgpa,
             sin_tin_gst_no,
+            academic_year,
             industry_supervisor_name,
             industry_supervisor_ph_no,
             mode_of_intern,
@@ -26,9 +32,10 @@ exports.registerInternship = catchAsync(async (req, res) => {
             days_of_internship,
             location,
             domain,
-            offer_letter
+            offer_letter,
+            student_id
         } = req.body;
-        const student_id = req.user.id;
+
         if (req.user.role === "student"){
             const student = await Student.where({id:req.user.id}).fetch();
             if (student.get('total_days_internship')+days_of_internship >45 && !student.get('placement_status')){
@@ -38,8 +45,8 @@ exports.registerInternship = catchAsync(async (req, res) => {
                 })
                 return;
             }
+            student_id = req.user.id;
         }
-
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
             company_name,
@@ -47,6 +54,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             company_ph_no,
             current_cgpa,
             sin_tin_gst_no,
+            academic_year,
             industry_supervisor_name,
             industry_supervisor_ph_no,
             mode_of_intern,
@@ -66,8 +74,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             internship_id:id
         });
         await approval.save();
-
-        const student = await Student.where({id: req.user.id}).fetch();
+        const student = await Student.where({id: student_id}).fetch();
         const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
         await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
@@ -275,10 +282,18 @@ exports.reject = catchAsync(async (req,res)=>{
 exports.downloadReport = catchAsync(async (req, res) =>{
     try{
         const internship = await InternshipDetails.where({id: req.params.id}).fetch();
-        generateInternshipDetails(internship);
+        const student = await Student.where({id:internship.get('student_id')}).fetch();
+        await generateInternshipDetails(internship, student);
+        await sleep(1000);
+        const pdfBuffer = fs.readFileSync(pdfFilePath);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="document.pdf"');
+        res.send(pdfBuffer);
     }
     catch(e){
-        const err = new AppError(e.message, 404);
-        err.sendResponse(res);
+        throw e;
+        // const err = new AppError(e.message, 404);
+        // err.sendResponse(res);
     }
 })

@@ -4,8 +4,8 @@ const internship = require('../controllers/internshipController');
 const authController = require('../controllers/authController')
 
 router.use(authController.protect);
-router.post('/register',authController.restrictTo('student'), internship.registerInternship);
 router.use(authController.restrictTo('student', 'mentor', 'tap-cell', 'internship_coordinator', 'principal', 'ceo'));
+router.post('/register', internship.registerInternship);
 router.route('/:id')
     .get(internship.viewInternship)
     .put(internship.updateInternship)
