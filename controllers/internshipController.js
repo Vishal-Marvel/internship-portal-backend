@@ -29,6 +29,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             offer_letter
         } = req.body;
         const student_id = req.user.id;
+        //special case
         if (req.user.role === "student"){
             const student = await Student.where({id:req.user.id}).fetch();
             if (student.get('total_days_internship')+days_of_internship >45 && !student.get('placement_status')){
@@ -71,9 +72,10 @@ exports.registerInternship = catchAsync(async (req, res) => {
         const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
         await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
-            , "Internship Registered by:\n " + student.get('name') + "\n\n" + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
-            // Send a success response
+        // Send a success response
 
         res.status(201).json({
             status: 'success',
@@ -179,6 +181,12 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         } else if (req.user.role === "internship_coordinator" && approval.get("mentor")) {
             approval.set({ internship_coordinator: true });
             await approval.save();
+            const staff = await Staff.where({role: 'hod', department:req.user.department}).fetch();
+           
+           
+                await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "Internship Coordinator - approved",
@@ -186,6 +194,12 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         } else if (req.user.role === "hod" && approval.get("mentor") && approval.get("internship_coordinator")) {
             approval.set({ hod: true });
             await approval.save();
+            const staff = await Staff.where({role: 'tap-cell'}).fetch();
+           
+           
+                await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "HOD - approved",
@@ -193,6 +207,12 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         } else if (req.user.role === "tap-cell" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod")) {
             approval.set({ tap_cell: true });
             await approval.save();
+            const staff = await Staff.where({role: 'principal'}).fetch();
+           
+           
+                await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "Tap-Cell - approved",
@@ -200,6 +220,9 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         } else if (req.user.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
             approval.set({ principal: true });
             await approval.save();
+                await sendEmail(student.get("email"), "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "Principal - approved",
