@@ -227,8 +227,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         } else if (req.user.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
             approval.set({ principal: true });
             await approval.save();
-                await sendEmail(student.get("email"), "Internship Approval - " + student.get('name')
-                    + "Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
+                await sendEmail(student.get("email"), "Internship Approval - " + student.get('name'),
+                 student.get('name')   + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "Principal - approved",
