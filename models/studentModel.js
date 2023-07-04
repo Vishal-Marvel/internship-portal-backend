@@ -22,6 +22,8 @@ const Student = bookshelf.model('Student', {
   setID:async function(){
     const uuid = uuidv4(null, null, null);
     this.set('id', uuid.toString());
+    this.set('registered_date', new Date());
+
   },
   encryptPassword: async function() {
     if (!this.hasChanged('password')) {

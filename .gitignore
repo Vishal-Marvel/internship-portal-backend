@@ -4,3 +4,5 @@ package-lock.json
 .idea
 db/migrations
 client_secret1.json
+test/
+pdf_file/
