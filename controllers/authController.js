@@ -221,7 +221,8 @@ exports.protect = catchAsync(async (req, res, next) => {
         name: user.get('name'),
         role: role,
         id: user.get('id'),
-        department : user.get('department')
+        department : user.get('department'),
+        sec_sit: user.get('sec_sit')
     }
     // Set student on req
     req.user = responseUser;

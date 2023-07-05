@@ -14,6 +14,8 @@ const StaffModel = bookshelf.model('staffs', {
     setID:async function(){
         const uuid = uuidv4(null, null, null);
         this.set('id', uuid.toString());
+        this.set('registered_date', new Date());
+
     },
     students: function() {
         return this.hasMany(Student, 'staff_id');

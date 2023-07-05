@@ -5,13 +5,38 @@ const AppError = require('../utils/appError');
 const {sendEmail} = require("../utils/mail");
 const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
+const File = require("../models/fileModel");
 const fs = require('fs');
 const {generateInternshipDetails} = require("../utils/pdfGenerator");
-const pdfFilePath = "\pdf_file\\report.pdf";
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+const saveFile = async (buffer, mimetype, fileName, originalname) => {
+    try {
+        console.log(mimetype);
+        if (mimetype !== 'application/pdf') {
+            throw new AppError('File type is invalid', 400);
+        }
+
+        const file = new File({
+            file_name: fileName,
+            file: buffer
+        });
+
+        await file.save();
+
+        return file.id;
+    }
+    catch (e){
+        if (e.code === 'ER_DATA_TOO_LONG'){
+           throw new AppError(`File ${originalname} is too large`,  400);
+        }
+        else{
+            throw new AppError(e.message,  500);
+        }
+    }
+};
 
 exports.registerInternship = catchAsync(async (req, res) => {
     try {
@@ -32,8 +57,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             days_of_internship,
             location,
             domain,
-            offer_letter,
-            student_id
+            student_id // This is for students registering by Staffs
         } = req.body;
         //special case
         if (req.user.role === "student"){
@@ -64,13 +88,20 @@ exports.registerInternship = catchAsync(async (req, res) => {
             days_of_internship,
             location,
             domain,
-            offer_letter,
-            student_id
+            student_id,
         });
 
         // Save the internship details to the database
         await internshipDetails.save();
         const id = internshipDetails.get('id');
+
+        const { buffer, mimetype, originalname } = req.file;
+        const fileName = `${id}_offer_letter`; // Append the unique suffix to the file name
+
+        const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
+        await internshipDetails.set({
+            offer_letter
+        })
         const approval = new Approval({
             internship_id:id
         });
@@ -93,9 +124,44 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
     } catch (err) {
         // Handle any errors that occur during the process
-        // const error = new AppError(err.message, 400);
-        // error.sendResponse(res);
-        throw err;
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+        // throw err;
+    }
+});
+
+exports.uploadCompletionForm = catchAsync(async (req, res)=>{
+
+    try {
+        const { certificate, attendance, feedback } = req.files;
+        const { buffer: certificateBuffer, mimetype: certificateMimetype, originalname: certificate_Original } = certificate[0];
+        const certificateFileName = `${req.user.id}_certificate_of_completion`;
+        const certificateId = await saveFile(certificateBuffer, certificateMimetype, certificateFileName, certificate_Original);
+
+        const { buffer: attendanceBuffer, mimetype: attendanceMimetype, originalname: attendance_Original } = attendance[0];
+        const attendanceFileName = `${req.user.id}_attendance`;
+        const attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
+
+        const { buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original } = feedback[0];
+        const feedbackFileName = `${req.user.id}_feedback`;
+        const feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
+
+        const internship = await InternshipDetails.findByIdAndUpdate( req.params.id ,{
+            certificate: certificateId,
+            attendance: attendanceId,
+            feedback: feedbackId
+        } );
+
+        res.status(201).json({
+            status: 'success',
+            message: 'Internship documents uploaded successfully',
+
+        });
+    }
+    catch (err){
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+
     }
 });
 
@@ -179,8 +245,6 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             }
-
-
             res.status(200).json({
                 status: "success",
                 message: "Mentor - approved",
@@ -189,9 +253,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             approval.set({ internship_coordinator: true });
             await approval.save();
             const staff = await Staff.where({role: 'hod', department:req.user.department}).fetch();
-
-
-                await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
+            await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
                     , "Internship Registered by:\n " + student.get('name') + "\n\n"
                     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
@@ -304,10 +366,11 @@ exports.reject = catchAsync(async (req,res)=>{
 exports.downloadReport = catchAsync(async (req, res) =>{
     try{
         const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const approval = await Approval.where({internship_id: req.params.id}).fetch();
         const student = await Student.where({id:internship.get('student_id')}).fetch();
-        await generateInternshipDetails(internship, student);
+        const path = await generateInternshipDetails(internship, student, approval);
         await sleep(1000);
-        const pdfBuffer = fs.readFileSync(pdfFilePath);
+        const pdfBuffer = fs.readFileSync(path);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename="document.pdf"');
@@ -317,4 +380,29 @@ exports.downloadReport = catchAsync(async (req, res) =>{
         const err = new AppError(e.message, 404);
         err.sendResponse(res);
     }
+})
+
+exports.downloadFiles = catchAsync(async (req, res) =>{
+    try {
+        const fileId = req.params.id;
+        const file = await File.where({ id: fileId }).fetch();
+
+        if (!file) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'File not found',
+            });
+        }
+
+        const fileName = file.get('file_name');
+        const fileData = file.get('file');
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.send(fileData);
+    } catch (err) {
+        const e = new AppError(err.message, 500);
+        e.sendResponse(res);
+    }
+
 })

@@ -9,6 +9,7 @@ const InternshipDetails = bookshelf.model('InternshipDetails', {
   setID:async function(){
     const uuid = uuidv4(null, null, null);
     this.set('id', uuid.toString());
+    this.set('registered_date', new Date());
   },
   student_id: function() {
     return this.belongsTo(Student);
