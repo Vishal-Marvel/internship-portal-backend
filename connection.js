@@ -65,7 +65,9 @@ knex.schema.hasTable('internships').then(exists => {
             table.integer('days_of_internship');
             table.string('location');
             table.string('domain');
-            table.string('certificate_of_completion');
+            table.string('certificate');
+            table.string('attendance');
+            table.string('feedback');
             table.string('offer_letter');
             table.string('student_id').references('students.id').onDelete('CASCADE');
         });
@@ -105,7 +107,7 @@ knex.schema.hasTable("files").then(exists =>{
         return knex.schema.createTable('files', table=>{
             table.string('id').primary();
             table.string('file_name').unique();
-            table.binary('file');
+            table.specificType('file', 'longblob');
             table.date('uploaded_at');
         })
     }

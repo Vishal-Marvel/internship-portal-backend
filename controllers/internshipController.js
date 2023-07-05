@@ -14,6 +14,7 @@ function sleep(ms) {
 }
 const saveFile = async (buffer, mimetype, fileName, originalname) => {
     try {
+        console.log(mimetype);
         if (mimetype !== 'application/pdf') {
             throw new AppError('File type is invalid', 400);
         }
@@ -30,6 +31,9 @@ const saveFile = async (buffer, mimetype, fileName, originalname) => {
     catch (e){
         if (e.code === 'ER_DATA_TOO_LONG'){
            throw new AppError(`File ${originalname} is too large`,  400);
+        }
+        else{
+            throw new AppError(e.message,  500);
         }
     }
 };
@@ -68,19 +72,10 @@ exports.registerInternship = catchAsync(async (req, res) => {
             student_id = req.user.id;
         }
 
-        const { buffer, mimetype } = req.file;
-        if (mimetype !== 'application/pdf'){
-            const error = new AppError("File Type id invalid", 400);
-            error.sendResponse(res);
-            return;
-        }
+        const { buffer, mimetype, originalname } = req.file;
         const fileName = `${student_id}_offer_letter`; // Append the unique suffix to the file name
-        const file = new File({
-            file_name:fileName,
-            file:buffer
-        })
-        await file.save();
-        const offer_letter = file.id;
+
+        const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
 
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
@@ -127,9 +122,9 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
     } catch (err) {
         // Handle any errors that occur during the process
-        // const error = new AppError(err.message, 400);
-        // error.sendResponse(res);
-        throw err;
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+        // throw err;
     }
 });
 
@@ -152,7 +147,7 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
         const internship = await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
             attendance: attendanceId,
-            offer_letter: feedbackId
+            feedback: feedbackId
         } );
 
         res.status(201).json({

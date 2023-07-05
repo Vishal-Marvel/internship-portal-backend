@@ -4,7 +4,11 @@ const internship = require('../controllers/internshipController');
 const authController = require('../controllers/authController')
 const multer = require('multer');
 // Create an instance of multer for handling file uploads
-const upload = multer();
+const upload = multer({
+    limits: {
+        fileSize: 1048576
+    }
+});
 
 router.use(authController.protect);
 router.use(authController.restrictTo('student', 'mentor', 'tap-cell', 'internship_coordinator', 'principal', 'ceo'));
