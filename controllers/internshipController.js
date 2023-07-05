@@ -72,11 +72,6 @@ exports.registerInternship = catchAsync(async (req, res) => {
             student_id = req.user.id;
         }
 
-        const { buffer, mimetype, originalname } = req.file;
-        const fileName = `${student_id}_offer_letter`; // Append the unique suffix to the file name
-
-        const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
-
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
             company_name,
@@ -94,12 +89,19 @@ exports.registerInternship = catchAsync(async (req, res) => {
             location,
             domain,
             student_id,
-            offer_letter
         });
 
         // Save the internship details to the database
         await internshipDetails.save();
         const id = internshipDetails.get('id');
+
+        const { buffer, mimetype, originalname } = req.file;
+        const fileName = `${id}_offer_letter`; // Append the unique suffix to the file name
+
+        const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
+        await internshipDetails.set({
+            offer_letter
+        })
         const approval = new Approval({
             internship_id:id
         });
@@ -378,4 +380,29 @@ exports.downloadReport = catchAsync(async (req, res) =>{
         const err = new AppError(e.message, 404);
         err.sendResponse(res);
     }
+})
+
+exports.downloadFiles = catchAsync(async (req, res) =>{
+    try {
+        const fileId = req.params.id;
+        const file = await File.where({ id: fileId }).fetch();
+
+        if (!file) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'File not found',
+            });
+        }
+
+        const fileName = file.get('file_name');
+        const fileData = file.get('file');
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.send(fileData);
+    } catch (err) {
+        const e = new AppError(err.message, 500);
+        e.sendResponse(res);
+    }
+
 })

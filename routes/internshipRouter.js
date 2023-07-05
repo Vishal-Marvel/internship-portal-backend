@@ -6,7 +6,7 @@ const multer = require('multer');
 // Create an instance of multer for handling file uploads
 const upload = multer({
     limits: {
-        fileSize: 1048576
+        fileSize: 1048576 // 1 mb
     }
 });
 
@@ -24,6 +24,7 @@ router.route('/:id')
     .delete(internship.deleteInternship)
 router.get('/approval-status/:id', internship.getApprovalStatus);
 router.get('/download-report/:id', internship.downloadReport);
+router.get('/download-file/:id', internship.downloadFiles);
 
 router.use(authController.restrictTo('mentor', 'tap-cell', 'internship_coordinator', 'principal', 'ceo'));
 router.post('/approval/:id', internship.approveInternship);
