@@ -16,6 +16,7 @@ knex.schema.hasTable('students').then(exists => {
             table.string('sec_sit');
             table.string('student_id').unique();
             table.integer('year_of_studying');
+            table.date('registered_date');
             table.string('register_num');
             table.string('department');
             table.string('email').unique();
@@ -39,10 +40,12 @@ knex.schema.hasTable('staffs').then(exists => {
             table.string('department');
             table.string('sec_sit');
             table.date('registered_date');
-            table.string('email').unique();
+            table.string('email');
             table.string('phone_no');
             table.string('role');
             table.string('password');
+            table.index(['email', 'role'], "Email Role Unique", "unique"); // Create a unique index on email and role
+
         });
     }
 });
@@ -98,6 +101,7 @@ knex.schema.hasTable("approval").then(exists=>{
             table.string('comments')
             table.string('comments_by_id')
             table.string('comments_by_Role')
+            table.date('commented_at')
             table.string('internship_id').references('internships.id').onDelete('CASCADE');
 
         })

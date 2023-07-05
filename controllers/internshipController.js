@@ -232,12 +232,19 @@ exports.approveInternship = catchAsync(async (req,res)=>{
     try {
         const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const student = await Student.where({id: internship.get('student_id')}).fetch();
-
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
         if (req.user.role === "mentor") {
-            approval.set({ mentor: true });
+            approval.set({
+                mentor: true,
+                mentor_id:req.user.id,
+                mentor_approved_at:new Date()
+            });
             await approval.save();
-            const staff = await Staff.where({role: 'internship_coordinator', department:req.user.department}).fetchAll();
+            const staff = await Staff.where({
+                role: 'internship_coordinator',
+                department: student.get('department'),
+                sec_sit: student.get('sec_sit')
+            }).fetchAll();
             const staffEmails = staff.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
                 await sendEmail(email, "Internship Approval - " + student.get('name')
@@ -250,47 +257,55 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "Mentor - approved",
             });
         } else if (req.user.role === "internship_coordinator" && approval.get("mentor")) {
-            approval.set({ internship_coordinator: true });
+            approval.set({internship_coordinator: true,
+                internship_coordinator_id:req.user.id,
+                internship_coordinator_approved_at:new Date()});
             await approval.save();
-            const staff = await Staff.where({role: 'hod', department:req.user.department}).fetch();
+            const staff = await Staff.where({
+                role: 'hod',
+                department: student.get('department'),
+                sec_sit: student.get('sec_sit')
+            }).fetch();
             await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+                , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "Internship Coordinator - approved",
             });
         } else if (req.user.role === "hod" && approval.get("mentor") && approval.get("internship_coordinator")) {
-            approval.set({ hod: true });
+            approval.set({hod: true,
+                hod_id:req.user.id,
+                hod_approved_at:new Date()});
             await approval.save();
             const staff = await Staff.where({role: 'tap-cell'}).fetch();
-
-
-                await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
+                , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "HOD - approved",
             });
         } else if (req.user.role === "tap-cell" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod")) {
-            approval.set({ tap_cell: true });
+            approval.set({tap_cell: true,
+                tap_cell_id:req.user.id,
+                tap_cell_approved_at:new Date()});
             await approval.save();
-            const staff = await Staff.where({role: 'principal'}).fetch();
-
-
-                await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            const staff = await Staff.where({role: 'principal', sec_sit: student.get('sec_sit')}).fetch();
+            await sendEmail(staff.get("email"), "Internship Approval - " + student.get('name')
+                , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "Tap-Cell - approved",
             });
         } else if (req.user.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
-            approval.set({ principal: true });
+            approval.set({principal: true,
+                principal_id:req.user.id,
+                principal_approved_at:new Date()});
             await approval.save();
-                await sendEmail(student.get("email"), "Internship Approval - " + student.get('name'),
-                 student.get('name')   + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
+                student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
             res.status(200).json({
                 status: "success",
                 message: "Principal - approved",
@@ -318,7 +333,13 @@ exports.sendBack = catchAsync(async (req,res)=>{
         // const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
         const comments = req.body.comments;
-        await approval.save({comments})
+        approval.set({
+            comments: comments,
+            comments_by_id: req.user.id,
+            comments_by_Role: req.user.role,
+            commented_at: new Date()
+        })
+        await approval.save()
         res.status(200).json({
             status: 'success',
             message: 'Comment Added and Sent Back'

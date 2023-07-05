@@ -9,7 +9,8 @@ const jwt = require("jsonwebtoken");
 exports.studentSignUp = catchAsync(async (req, res) => {
 
     try {
-        const staff = await Staff.where({email:req.body.mentor_email}).fetch();
+        const mentor_email = req.body.mentor_email;
+        const staff = await Staff.where({email:mentor_email, role:"mentor"}).fetch();
         req.body.staff_id = staff.id;
         req.body.role = "student";
         const {
@@ -46,6 +47,10 @@ exports.studentSignUp = catchAsync(async (req, res) => {
     } catch (err) {
         if (err.message === "EmptyResponse"){
             const error = new AppError("Staff Not Found", 404);
+            error.sendResponse(res);
+        }
+        else if (err.code==="ER_DUP_ENTRY"){
+            const error = new AppError("Student Already Exists", 400);
             error.sendResponse(res);
         }
         else {
@@ -85,8 +90,14 @@ exports.staffSignup = catchAsync(async (req, res) => {
             }
         });
     } catch (err) {
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
+        if (err.code==="ER_DUP_ENTRY"){
+            const error = new AppError("Staff Already Exists", 400);
+            error.sendResponse(res);
+        }
+        else {
+            const error = new AppError(err.message, 400);
+            error.sendResponse(res);
+        }
     }
 })
 
@@ -235,6 +246,17 @@ exports.restrictTo = (...roles) => {
     
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {
+            // console.log(req.user);
+            return next(new AppError('You are not authorized to perform this action', 403));
+        }
+
+        next();
+    };
+};
+exports.doNotAllow = (...roles) => {
+
+    return (req, res, next) => {
+        if (roles.includes(req.user.role)) {
             console.log(req.user);
             return next(new AppError('You are not authorized to perform this action', 403));
         }

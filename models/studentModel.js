@@ -10,7 +10,6 @@ const Student = bookshelf.model('Student', {
   initialize: function() {
     this.on('creating', this.encryptPassword);
     this.on('creating', this.setID);
-    this.on('creating', this.studentIdUnique);
     // this.on('saving', this.updatePasswordChangedAt);
   },
   internship: function() {
@@ -36,13 +35,6 @@ const Student = bookshelf.model('Student', {
     const password = this.get('password');
     return await bcrypt.compare(candidatePassword, password);
   },
-  studentIdUnique: async  function(){
-    const student_id = this.get('student_id');
-    const testStudent = await Student.where({ student_id }).fetchAll();
-    if (testStudent.length>0){
-      throw Error("Student Id Already Exists");
-    }
-  }
 
 
 });
