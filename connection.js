@@ -21,10 +21,10 @@ knex.schema.hasTable('students').then(exists => {
             table.string('email').unique();
             table.string('phone_no');
             table.string('password');
+            table.string('skills');
             table.integer('total_days_internship');
             table.boolean('placement_status');
             table.string('placed_company');
-            // table.string('skills');
             table.string('staff_id'); // Add staff_id column for the foreign key
             table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
         });
