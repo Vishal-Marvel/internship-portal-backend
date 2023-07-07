@@ -9,7 +9,7 @@ const cors = require('cors');
 const studentRouter = require('./routes/studentRouter');
 const staffRouter = require('./routes/staffRouter');
 const internshipRouter = require('./routes/internshipRouter');
-
+const adminRouter = require('./routes/adminRouter');
 const app = express();
 
 app.enable('trust proxy');
@@ -28,7 +28,7 @@ app.options('*', cors());
 const limit = rateLimit({
   max: 100,
   windowMs: 60 * 60 * 60,
-  message: 'Too many request with thi IP Address..Try again in 1 hour'
+  message: 'Too many request with this IP Address..Try again in 1 hour'
 });
 
 app.use('/internship/api', limit);
@@ -36,6 +36,7 @@ app.use('/internship/api', limit);
 app.use('/internship/api/v1/students', studentRouter);
 app.use('/internship/api/v1/staffs', staffRouter);
 app.use('/internship/api/v1/internships', internshipRouter);
+app.use('/internship/api/v1/admin', adminRouter);
 
 if(process.env.NODE_ENV === 'development')
   app.use(morgan('dev'));

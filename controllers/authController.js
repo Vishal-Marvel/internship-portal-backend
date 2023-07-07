@@ -1,9 +1,9 @@
 const Student = require('../models/studentModel');
 const Staff = require('../models/staffModel')
+const Role = require('../models/roleModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require("jsonwebtoken");
-
 
 // Signup function
 exports.studentSignUp = catchAsync(async (req, res) => {
@@ -69,7 +69,6 @@ exports.staffSignup = catchAsync(async (req, res) => {
             email,
             sec_sit,
             phone_no,
-            role,
             password
         } = req.body;
         const staff = new Staff({
@@ -78,7 +77,6 @@ exports.staffSignup = catchAsync(async (req, res) => {
             email,
             sec_sit,
             phone_no,
-            role,
             password
         });
         await staff.save()
@@ -157,7 +155,7 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
         return next(new AppError('Please provide both email and password', 400));
     }
     try {
-        const staff = await Staff.where({email}).fetch();
+        const staff = await Staff.where({email}).fetch({ withRelated: ['roles'] });
 
         if (!(await staff.verifyPassword(password))) {
             res.status(400).json({
@@ -166,8 +164,10 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             });
             return;
         }
+        const userRoles = staff.related('roles');
+        const roles = userRoles.map(role=>role.get('role_name'))
 
-        const token = jwt.sign({id: staff.get('id'), role: staff.get('role')}, process.env.JWT_SECRET, {
+        const token = jwt.sign({id: staff.get('id'), roles: roles}, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRESIN
         });
 
@@ -175,7 +175,7 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             expires: new Date(Date.now() + process.env.COOKIE_EXPIRESIN * 60 * 60 * 1000),
             httpOnly: true
         };
-        const role = staff.get('role');
+
 
         res.cookie('jwt', token, cookieOptions);
 
@@ -183,7 +183,7 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             status: 'success',
             data: {
                 token,
-                role
+                roles
             }
         });
     } catch (err) {
@@ -213,11 +213,11 @@ exports.protect = catchAsync(async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const role = decoded.role;
-    // console.log(decoded);
+    const roles = decoded.roles;
+    // console.log(roles);
     let user = null;
     // Check if user exists
-    if (role === "student")
+    if (roles.includes("student"))
         user = await Student.where({ id: decoded.id }).fetch();
     else {
         user = await Staff.where({id: decoded.id}).fetch();
@@ -230,7 +230,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     }
     const responseUser = {
         name: user.get('name'),
-        role: role,
+        roles: roles,
         id: user.get('id'),
         department : user.get('department'),
         sec_sit: user.get('sec_sit')
@@ -242,22 +242,130 @@ exports.protect = catchAsync(async (req, res, next) => {
     next();
 });
 
+exports.addRole = catchAsync(async (req, res)=>{
+    try{
+        const role_name=req.body.role_name
+        const role = new Role({
+            role_name
+        })
+        await role.save();
+        res.status(200).json({
+            status: "success",
+            message: "Role Added"
+        })
+    }catch(e){
+        if (e.code==="ER_DUP_ENTRY") {
+            const error = new AppError("Role already Exists", 400);
+            error.sendResponse(res);
+        }
+        else{
+            const error = new AppError(e.message, 500);
+            error.sendResponse(res);
+        }
+    }
+})
+
+// Perform startup tasks
+exports.performStartupTasks = catchAsync (async (req,res, next) => {
+    try {
+        // Create the user
+        try {
+            const role = await Role.where({role_name: "admin"}).fetch();
+            if (!role) {
+                // console.log('Role not found. Creating "admin" role...');
+                const admin = new Role({
+                    role_name: "admin"
+                });
+                await admin.save();
+                // console.log('Role created successfully.');
+            }
+        } catch (e) {
+            if (e.message === "EmptyResponse") {
+                // console.log('Role not found. Creating "admin" role...');
+                const admin = new Role({
+                    role_name: "admin"
+                });
+                await admin.save();
+                // console.log('Role created successfully.');
+            } else {
+                throw new AppError(e.message, 500);
+            }
+        }
+        try {
+            const staff = await Staff.where({name: "admin"}).fetch();
+            const role = await Role.where({role_name: "admin"}).fetch();
+
+            if (!staff) {
+                // console.log('Staff not found. Creating "admin" staff...');
+                const admin = new Staff({
+                    name: "admin",
+                    email: "admin@website",
+                    password: "admin23"
+                });
+                await admin.roles().attach(role);
+                await admin.save();
+                // console.log('Role created successfully.');
+            }
+        } catch (e) {
+            if (e.message === "EmptyResponse") {
+                const role = await Role.where({role_name: "admin"}).fetch();
+
+                // console.log('Role not found. Creating "admin" role...');
+                const admin = new Staff({
+                    name: "admin",
+                    email: "admin@website",
+                    password: "admin23"
+                });
+                await admin.save();
+                await admin.roles().attach(role);
+
+                // console.log('Role created successfully.');
+            } else {
+                throw new AppError(e.message, 500);
+            }
+        }
+
+        console.log('Startup tasks completed');
+        res.status(200).json({
+            status: "success"
+        })
+        // Start your server or continue with other startup tasks
+    } catch (error) {
+        console.error('Error during startup:', error);
+        process.exit(1); // Exit the process if an error occurred during startup
+    }
+});
+// Connect to the database and perform startup tasks
+
+exports.assignRole = catchAsync(async (req, res) =>{
+    const role = await Role.where({ role_name: req.body.role }).fetch();
+    const staff = await Staff.where({ id: req.body.staff_id }).fetch();
+    await staff.roles().attach(role);
+    res.status(200).json({
+        status: "success",
+        message: `${role.get('role_name')} Role Assigned to ${staff.get('name')}`
+    })
+});
+
 exports.restrictTo = (...roles) => {
-    
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            // console.log(req.user);
+        const userRoles = JSON.stringify(req.user.roles);
+        const authorizedRoles = JSON.stringify(roles);
+
+        if (!authorizedRoles.includes(userRoles)) {
             return next(new AppError('You are not authorized to perform this action', 403));
         }
 
         next();
     };
 };
-exports.doNotAllow = (...roles) => {
 
+exports.doNotAllow = (...roles) => {
     return (req, res, next) => {
-        if (roles.includes(req.user.role)) {
-            console.log(req.user);
+        const userRoles = req.user.roles;
+        const hasMatchingRole = roles.some(role => userRoles.includes(role));
+
+        if (hasMatchingRole) {
             return next(new AppError('You are not authorized to perform this action', 403));
         }
 

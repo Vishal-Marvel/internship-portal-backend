@@ -1,6 +1,7 @@
 const bookshelf = require('../connection')
 const { v4: uuidv4 } = require('uuid');
 const Student = require("./studentModel")
+const Role = require("./roleModel")
 const bcrypt = require("bcrypt");
 
 const StaffModel = bookshelf.model('staffs', {
@@ -18,6 +19,9 @@ const StaffModel = bookshelf.model('staffs', {
     },
     students: function() {
         return this.hasMany(Student, 'staff_id');
+    },
+    roles() {
+        return this.belongsToMany(Role, 'staff_roles', 'staff_id', 'role_id');
     },
     encryptPassword: async function() {
         if (!this.hasChanged('password')) {

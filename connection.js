@@ -40,11 +40,9 @@ knex.schema.hasTable('staffs').then(exists => {
             table.string('department');
             table.string('sec_sit');
             table.date('registered_date');
-            table.string('email');
+            table.string('email').unique();
             table.string('phone_no');
-            table.string('role');
             table.string('password');
-            table.index(['email', 'role'], "Email Role Unique", "unique"); // Create a unique index on email and role
 
         });
     }
@@ -77,7 +75,6 @@ knex.schema.hasTable('internships').then(exists => {
         });
     }
 });
-
 
 knex.schema.hasTable("approval").then(exists=>{
     if (!exists){
@@ -115,6 +112,26 @@ knex.schema.hasTable("files").then(exists =>{
             table.string('file_name').unique();
             table.specificType('file', 'longblob');
             table.date('uploaded_at');
+        })
+    }
+})
+
+knex.schema.hasTable("roles").then(exists =>{
+    if (!exists){
+        return knex.schema.createTable('roles', table=>{
+            table.string('id').primary();
+            table.string('role_name').unique();
+        })
+    }
+})
+
+knex.schema.hasTable("staff_roles").then(exists =>{
+    if (!exists){
+        return knex.schema.createTable('staff_roles', table=>{
+            table.string('staff_id').references('staffs.id').onDelete('CASCADE');
+            table.string('role_id').references('roles.id').onDelete('CASCADE');
+            table.primary(['user_id', 'role_id']);
+
         })
     }
 })
