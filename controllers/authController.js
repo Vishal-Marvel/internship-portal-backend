@@ -115,8 +115,8 @@ exports.studentLogin = catchAsync(async (req,res, next)=>{
             });
             return;
         }
-
-        const token = jwt.sign({id: student.get('id'), role: "student"}, process.env.JWT_SECRET, {
+        const roles = ["student"];
+        const token = jwt.sign({id: student.get('id'), roles: roles}, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRESIN
         });
 
@@ -127,12 +127,11 @@ exports.studentLogin = catchAsync(async (req,res, next)=>{
 
         res.cookie('jwt', token, cookieOptions);
 
-        const role = "student";
         res.status(200).json({
             status: 'success',
             data: {
                 token,
-                role
+                roles
             }
         });
     } catch (err) {

@@ -36,4 +36,32 @@ const StaffModel = bookshelf.model('staffs', {
     },
 });
 
+
+StaffModel.findByIdAndUpdate = async function (id, updatedData) {
+    try {
+      const staff = await StaffModel.where({id}).fetch();
+      if (!staff) {
+        throw new Error('Staff not found');
+      }
+      await staff.save(updatedData);
+      return staff;
+    } 
+    catch (err) {
+      throw err;
+    }
+  };
+  
+  StaffModel.findByIdAndDelete = async function (id) {
+    try {
+      const staff = await StaffModel.where({id}).fetch();
+      if (!staff) {
+        throw new Error('Staff not found');
+      }
+      await staff.destroy();
+    } 
+    catch (err) {
+      throw err;
+    }
+  };
+  
 module.exports = StaffModel;

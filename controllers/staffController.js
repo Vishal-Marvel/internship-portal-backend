@@ -23,6 +23,48 @@ exports.viewStaff = catchAsync(async (req, res) => {
 });
 
 exports.updateStaff = catchAsync(async (req, res) => {
+    console.log("hello");
+    try {
+        let staffId;
+          staffId = req.user.id;
+        const {
+            name,
+            phone_no
+        } = req.body;
+
+        const updatedData = {
+          name,phone_no
+        }
+      
+          // Find the staff in the database based on the provided ID
+          const staff = await Staff.findByIdAndUpdate(Id, updatedData, {
+            new: true, // Return the updated document
+            runValidators: true, // Run the validation on the updated fields
+            tableName: 'staffs' // Specify the table name
+          });
+      
+          if (!staff) {
+            // If the staff with the provided ID is not found, return an error response
+            return res.status(404).json({
+              status: 'fail',
+              message: 'Staff not found',
+            });
+          }
+      
+          // Send a success response
+          res.status(200).json({
+            status: 'success',
+            message: 'Staff details updated successfully',
+            data: {
+              staff,
+            },
+          });
+      }
+      catch (err) {
+          // Handle any errors that occur during the process
+          const error = new AppError(err.message, 400);
+          error.sendResponse(res);
+      }
 });
 
 exports.deleteStaff = catchAsync(async (req, res) => {
