@@ -5,8 +5,28 @@ const knex = require('knex');
 
 exports.updateStudent = catchAsync(async (req, res) => {
     try {
-        const studentId = req.params.id;
-        const updatedData = req.body;
+      let studentId;
+      // console.log(req.user)
+      if (req.user.role === "student"){
+        studentId = req.user.id;
+      }
+      else{
+        studentId = req.body.student_id; // If the student Details is changed by a staff.
+      }
+        const {
+          name,
+          sec_sit,
+          year_of_studying,
+          phone_no,
+          total_days_internship,
+          placement_status,
+          placed_company,
+      } = req.body;
+      const updatedData = {
+        name, sec_sit, year_of_studying, phone_no,total_days_internship,
+        placement_status,
+        placed_company
+      }
     
         // Find the student in the database based on the provided ID
         const student = await Student.findByIdAndUpdate(studentId, updatedData, {

@@ -39,4 +39,33 @@ const Student = bookshelf.model('Student', {
 
 });
 
+
+
+Student.findByIdAndUpdate = async function (id, updatedData) {
+  try {
+    const student = await Student.where({id}).fetch();
+    if (!student) {
+      throw new Error('Student not found');
+    }
+    await student.save(updatedData);
+    return student;
+  } 
+  catch (err) {
+    throw err;
+  }
+};
+
+Student.findByIdAndDelete = async function (id) {
+  try {
+    const student = await Student.where({id}).fetch();
+    if (!student) {
+      throw new Error('Student not found');
+    }
+    await student.destroy();
+  } 
+  catch (err) {
+    throw err;
+  }
+};
+
 module.exports = Student;
