@@ -11,7 +11,6 @@ const upload = multer({
 });
 
 router.use(authController.protect);
-router.use(authController.restrictTo('student', 'mentor','hod', 'tap-cell', 'internship_coordinator', 'principal', 'ceo'));
 router.post('/register',upload.single('file'), internship.registerInternship);
 router.post('/completion-update/:id',upload.fields([ // that id is params, url param
     { name: 'certificate' },
@@ -26,7 +25,7 @@ router.get('/approval-status/:id', internship.getApprovalStatus);
 router.get('/download-report/:id', internship.downloadReport);
 router.get('/download-file/:id', internship.downloadFiles);
 
-router.use(authController.doNotAllow('student'));
+router.use(authController.doNotAllow('student')); // Restricting Students
 router.post('/approval/:id', internship.approveInternship);
 router.post('/send-back/:id', internship.sendBack);
 router.post('/reject/:id', internship.reject);
