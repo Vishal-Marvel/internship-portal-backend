@@ -25,8 +25,7 @@ exports.viewStaff = catchAsync(async (req, res) => {
 exports.updateStaff = catchAsync(async (req, res) => {
     console.log("hello");
     try {
-        let staffId;
-          staffId = req.user.id;
+        const staffId = req.user.id;
         const {
             name,
             phone_no
@@ -37,7 +36,7 @@ exports.updateStaff = catchAsync(async (req, res) => {
         }
       
           // Find the staff in the database based on the provided ID
-          const staff = await Staff.findByIdAndUpdate(Id, updatedData, {
+          const staff = await Staff.findByIdAndUpdate(staffId, updatedData, {
             new: true, // Return the updated document
             runValidators: true, // Run the validation on the updated fields
             tableName: 'staffs' // Specify the table name

@@ -7,7 +7,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
     try {
       let studentId;
       // console.log(req.user)
-      if (req.user.role === "student"){
+      if (req.user.roles.includes("student")){
         studentId = req.user.id;
       }
       else{

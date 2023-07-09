@@ -265,75 +265,75 @@ exports.addRole = catchAsync(async (req, res)=>{
 })
 
 // Perform startup tasks
-exports.performStartupTasks = catchAsync (async (req,res, next) => {
-    try {
-        // Create the user
-        try {
-            const role = await Role.where({role_name: "admin"}).fetch();
-            if (!role) {
-                // console.log('Role not found. Creating "admin" role...');
-                const admin = new Role({
-                    role_name: "admin"
-                });
-                await admin.save();
-                // console.log('Role created successfully.');
-            }
-        } catch (e) {
-            if (e.message === "EmptyResponse") {
-                // console.log('Role not found. Creating "admin" role...');
-                const admin = new Role({
-                    role_name: "admin"
-                });
-                await admin.save();
-                // console.log('Role created successfully.');
-            } else {
-                throw new AppError(e.message, 500);
-            }
-        }
-        try {
-            const staff = await Staff.where({name: "admin"}).fetch();
-            const role = await Role.where({role_name: "admin"}).fetch();
-
-            if (!staff) {
-                // console.log('Staff not found. Creating "admin" staff...');
-                const admin = new Staff({
-                    name: "admin",
-                    email: "admin@website",
-                    password: "admin23"
-                });
-                await admin.roles().attach(role);
-                await admin.save();
-                // console.log('Role created successfully.');
-            }
-        } catch (e) {
-            if (e.message === "EmptyResponse") {
-                const role = await Role.where({role_name: "admin"}).fetch();
-
-                // console.log('Role not found. Creating "admin" role...');
-                const admin = new Staff({
-                    name: "admin",
-                    email: "admin@website",
-                    password: "admin23"
-                });
-                await admin.save();
-                await admin.roles().attach(role);
-
-                // console.log('Role created successfully.');
-            } else {
-                throw new AppError(e.message, 500);
-            }
-        }
-
-        console.log('Startup tasks completed');
-        res.status(200).json({
-            status: "success"
-        })
-        // Start your server or continue with other startup tasks
-    } catch (error) {
-        console.error('Error during startup:', error);
-        process.exit(1); // Exit the process if an error occurred during startup
-    }
-});
+// exports.performStartupTasks = catchAsync (async (req,res, next) => {
+//     try {
+//         // Create the user
+//         try {
+//             const role = await Role.where({role_name: "admin"}).fetch();
+//             if (!role) {
+//                 // console.log('Role not found. Creating "admin" role...');
+//                 const admin = new Role({
+//                     role_name: "admin"
+//                 });
+//                 await admin.save();
+//                 // console.log('Role created successfully.');
+//             }
+//         } catch (e) {
+//             if (e.message === "EmptyResponse") {
+//                 // console.log('Role not found. Creating "admin" role...');
+//                 const admin = new Role({
+//                     role_name: "admin"
+//                 });
+//                 await admin.save();
+//                 // console.log('Role created successfully.');
+//             } else {
+//                 throw new AppError(e.message, 500);
+//             }
+//         }
+//         try {
+//             const staff = await Staff.where({name: "admin"}).fetch();
+//             const role = await Role.where({role_name: "admin"}).fetch();
+//
+//             if (!staff) {
+//                 // console.log('Staff not found. Creating "admin" staff...');
+//                 const admin = new Staff({
+//                     name: "admin",
+//                     email: "admin@website",
+//                     password: "admin23"
+//                 });
+//                 await admin.roles().attach(role);
+//                 await admin.save();
+//                 // console.log('Role created successfully.');
+//             }
+//         } catch (e) {
+//             if (e.message === "EmptyResponse") {
+//                 const role = await Role.where({role_name: "admin"}).fetch();
+//
+//                 // console.log('Role not found. Creating "admin" role...');
+//                 const admin = new Staff({
+//                     name: "admin",
+//                     email: "admin@website",
+//                     password: "admin23"
+//                 });
+//                 await admin.save();
+//                 await admin.roles().attach(role);
+//
+//                 // console.log('Role created successfully.');
+//             } else {
+//                 throw new AppError(e.message, 500);
+//             }
+//         }
+//
+//         console.log('Startup tasks completed');
+//         res.status(200).json({
+//             status: "success"
+//         })
+//         // Start your server or continue with other startup tasks
+//     } catch (error) {
+//         console.error('Error during startup:', error);
+//         process.exit(1); // Exit the process if an error occurred during startup
+//     }
+// });
 // Connect to the database and perform startup tasks
 
 exports.assignRole = catchAsync(async (req, res) =>{
