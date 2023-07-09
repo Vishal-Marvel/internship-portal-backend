@@ -3,14 +3,18 @@ const Staff = require('../models/staffModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
-exports.viewStudents = catchAsync(async (req, res) => {
+exports.viewMenteeStudents = catchAsync(async (req, res) => {
     try {
-        const students = await Student.where({ staff_id: req.user.id }).fetchAll();
+        const students = await Student.where({ staff_id: req.params.id }).fetchAll();
         const studentNames = students.map(student => student.get('name'));
+        const studentIds = students.map(student => student.get('id'));
+        const studentStudentIds = students.map(student => student.get('student_id'));
 
         res.status(200).json({
             data: {
-                students: studentNames
+                studentNames,
+                studentIds,
+                studentStudentIds
             }
         });
     } catch (error) {
@@ -23,9 +27,8 @@ exports.viewStaff = catchAsync(async (req, res) => {
 });
 
 exports.updateStaff = catchAsync(async (req, res) => {
-    console.log("hello");
     try {
-        const staffId = req.user.id;
+        const staffId = req.params.id;
         const {
             name,
             phone_no
@@ -68,3 +71,23 @@ exports.updateStaff = catchAsync(async (req, res) => {
 
 exports.deleteStaff = catchAsync(async (req, res) => {
 });
+
+exports.migrateMentees = catchAsync(async (req, res) => {
+    try{
+        const to_staff = req.body.to_staff;
+        const students = req.body.students;
+        for (const studentId of students){
+            const student = await Student.where({ id: studentId }).fetch();
+            student.set('staff_id', to_staff);
+            await student.save();
+        }
+        res.status(200).json({
+            status: "success",
+            message: "Mentor changed"
+        })
+
+    }catch(e){
+        const err = new AppError(e.message, 500);
+        await err.sendResponse(res);
+    }
+})

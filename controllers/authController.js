@@ -10,7 +10,7 @@ exports.studentSignUp = catchAsync(async (req, res) => {
 
     try {
         const mentor_email = req.body.mentor_email;
-        const staff = await Staff.where({email:mentor_email, role:"mentor"}).fetch();
+        const staff = await Staff.where({email:mentor_email}).fetch();
         req.body.staff_id = staff.id;
         req.body.role = "student";
         const {
@@ -264,110 +264,63 @@ exports.addRole = catchAsync(async (req, res)=>{
     }
 })
 
-// Perform startup tasks
-// exports.performStartupTasks = catchAsync (async (req,res, next) => {
-//     try {
-//         // Create the user
-//         try {
-//             const role = await Role.where({role_name: "admin"}).fetch();
-//             if (!role) {
-//                 // console.log('Role not found. Creating "admin" role...');
-//                 const admin = new Role({
-//                     role_name: "admin"
-//                 });
-//                 await admin.save();
-//                 // console.log('Role created successfully.');
-//             }
-//         } catch (e) {
-//             if (e.message === "EmptyResponse") {
-//                 // console.log('Role not found. Creating "admin" role...');
-//                 const admin = new Role({
-//                     role_name: "admin"
-//                 });
-//                 await admin.save();
-//                 // console.log('Role created successfully.');
-//             } else {
-//                 throw new AppError(e.message, 500);
-//             }
-//         }
-//         try {
-//             const staff = await Staff.where({name: "admin"}).fetch();
-//             const role = await Role.where({role_name: "admin"}).fetch();
-//
-//             if (!staff) {
-//                 // console.log('Staff not found. Creating "admin" staff...');
-//                 const admin = new Staff({
-//                     name: "admin",
-//                     email: "admin@website",
-//                     password: "admin23"
-//                 });
-//                 await admin.roles().attach(role);
-//                 await admin.save();
-//                 // console.log('Role created successfully.');
-//             }
-//         } catch (e) {
-//             if (e.message === "EmptyResponse") {
-//                 const role = await Role.where({role_name: "admin"}).fetch();
-//
-//                 // console.log('Role not found. Creating "admin" role...');
-//                 const admin = new Staff({
-//                     name: "admin",
-//                     email: "admin@website",
-//                     password: "admin23"
-//                 });
-//                 await admin.save();
-//                 await admin.roles().attach(role);
-//
-//                 // console.log('Role created successfully.');
-//             } else {
-//                 throw new AppError(e.message, 500);
-//             }
-//         }
-//
-//         console.log('Startup tasks completed');
-//         res.status(200).json({
-//             status: "success"
-//         })
-//         // Start your server or continue with other startup tasks
-//     } catch (error) {
-//         console.error('Error during startup:', error);
-//         process.exit(1); // Exit the process if an error occurred during startup
-//     }
-// });
-// Connect to the database and perform startup tasks
+exports.removeRole = catchAsync(async (req, res)=>{
+    try{
+        const role_name=req.body.role_name
+        const role = await Role.where({role_name}).fetch();
+        await role.destroy()
+        res.status(200).json({
+            status: "success",
+            message: "Role Removed"
+        })
+    }catch(e){
+        if (e.message==="EmptyResponse") {
+            const error = new AppError("Role does not Exists", 400);
+            error.sendResponse(res);
+        }
+        else{
+            const error = new AppError(e.message, 500);
+            error.sendResponse(res);
+        }
+    }
+})
 
-exports.assignRole = catchAsync(async (req, res) =>{
-    const role = await Role.where({ role_name: req.body.role }).fetch();
-    const staff = await Staff.where({ id: req.body.staff_id }).fetch();
-    await staff.roles().attach(role);
+exports.assignRoles = catchAsync(async (req, res) =>{
+    const roles = req.body.roles;
+    const roleObjs = await Promise.all(roles.map(async role => await Role.where({ role_name: role }).fetch()));
+
+    const roleIds = roleObjs.map(role => role.get('id')); // Extract the role IDs
+    const staff = await Staff.where({ id: req.body.id }).fetch();
+    await staff.roles().attach(roleIds);
     res.status(200).json({
         status: "success",
-        message: `${role.get('role_name')} Role Assigned to ${staff.get('name')}`
+        message: `${roles} Assigned to ${staff.get('name')}`
     })
 });
 
 exports.restrictTo = (...roles) => {
     return (req, res, next) => {
-        const userRoles = JSON.stringify(req.user.roles);
-        const authorizedRoles = JSON.stringify(roles);
+        const userRoles = req.user.roles;
 
-        if (!authorizedRoles.includes(userRoles)) {
-            return next(new AppError('You are not authorized to perform this action', 403));
+        if (userRoles.some(role => roles.includes(role))) {
+            return next();
         }
 
-        next();
+        return next(new AppError('You are not authorized to perform this action', 403));
     };
 };
 
 exports.doNotAllow = (...roles) => {
     return (req, res, next) => {
         const userRoles = req.user.roles;
-        const hasMatchingRole = roles.some(role => userRoles.includes(role));
+        // const hasMatchingRole = roles.some(role => userRoles.includes(role));
 
-        if (hasMatchingRole) {
+        if (!userRoles.some(role => !roles.includes(role))) {
             return next(new AppError('You are not authorized to perform this action', 403));
         }
+
 
         next();
     };
 };
+

@@ -62,7 +62,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
         //special case
         if (req.user.role === "student"){
             const student = await Student.where({id:req.user.id}).fetch();
-            if (student.get('total_days_internship')+days_of_internship >45 && !student.get('placement_status')){
+            if (student.get('total_days_internship')+days_of_internship >45 && !student.get('placement_status') && student.get('placed_company')!==company_name){
                 res.status(400).json({
                     status:"failed",
                     message:"Internship Days Exceeded"
@@ -133,20 +133,21 @@ exports.registerInternship = catchAsync(async (req, res) => {
 exports.uploadCompletionForm = catchAsync(async (req, res)=>{
 
     try {
+        const id = req.params.id;
         const { certificate, attendance, feedback } = req.files;
         const { buffer: certificateBuffer, mimetype: certificateMimetype, originalname: certificate_Original } = certificate[0];
-        const certificateFileName = `${req.user.id}_certificate_of_completion`;
+        const certificateFileName = `${id}_certificate_of_completion`;
         const certificateId = await saveFile(certificateBuffer, certificateMimetype, certificateFileName, certificate_Original);
 
         const { buffer: attendanceBuffer, mimetype: attendanceMimetype, originalname: attendance_Original } = attendance[0];
-        const attendanceFileName = `${req.user.id}_attendance`;
+        const attendanceFileName = `${id}_attendance`;
         const attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
 
         const { buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original } = feedback[0];
-        const feedbackFileName = `${req.user.id}_feedback`;
+        const feedbackFileName = `${id}_feedback`;
         const feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
 
-        const internship = await InternshipDetails.findByIdAndUpdate( req.params.id ,{
+        await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
             attendance: attendanceId,
             feedback: feedbackId
@@ -257,7 +258,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "Mentor - approved",
             });
         } else if (req.user.role === "internship_coordinator" && approval.get("mentor")) {
-            approval.set({internship_coordinator: true,
+            approval.set({
+                internship_coordinator: true,
                 internship_coordinator_id:req.user.id,
                 internship_coordinator_approved_at:new Date()});
             await approval.save();
@@ -274,7 +276,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "Internship Coordinator - approved",
             });
         } else if (req.user.role === "hod" && approval.get("mentor") && approval.get("internship_coordinator")) {
-            approval.set({hod: true,
+            approval.set({
+                hod: true,
                 hod_id:req.user.id,
                 hod_approved_at:new Date()});
             await approval.save();
@@ -287,7 +290,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "HOD - approved",
             });
         } else if (req.user.role === "tap-cell" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod")) {
-            approval.set({tap_cell: true,
+            approval.set({
+                tap_cell: true,
                 tap_cell_id:req.user.id,
                 tap_cell_approved_at:new Date()});
             await approval.save();
@@ -300,7 +304,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "Tap-Cell - approved",
             });
         } else if (req.user.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
-            approval.set({principal: true,
+            approval.set({
+                principal: true,
                 principal_id:req.user.id,
                 principal_approved_at:new Date()});
             await approval.save();
@@ -323,9 +328,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         // Handle any errors that occur during the process
         const error = new AppError(err.message, 400);
         error.sendResponse(res);
-
     }
-
 });
 
 exports.sendBack = catchAsync(async (req,res)=>{
