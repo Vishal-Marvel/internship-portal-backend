@@ -9,8 +9,8 @@ router.post('/login', authController.studentLogin);
 router.use(authController.protect)
 router.route('/:id')
     .get(studentController.viewStudent)
-    .put(studentController.updateStudent);
-    
+    .put(studentController.updateStudent)
+    .delete(studentController.deleteStudent);
 router.get('/:id/internships', studentController.viewStudentInternship);
 
 module.exports = router;

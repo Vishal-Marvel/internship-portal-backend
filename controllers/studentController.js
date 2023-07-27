@@ -21,11 +21,12 @@ exports.updateStudent = catchAsync(async (req, res) => {
           total_days_internship,
           placement_status,
           placed_company,
+          staff_id,
       } = req.body;
       const updatedData = {
         name, sec_sit, year_of_studying, phone_no,total_days_internship,
         placement_status,
-        placed_company
+        placed_company,staff_id
       }
     
         // Find the student in the database based on the provided ID
@@ -59,6 +60,26 @@ exports.updateStudent = catchAsync(async (req, res) => {
     }
 });
 
+exports.deleteStudent = catchAsync(async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // Find the student in the database based on the provided ID
+    await Staff.findByIdAndDelete(studentId, {tableName: 'students'});
+
+
+    // Send a success response
+    res.status(200).json({
+      status: 'success',
+      message: 'Student details deleted successfully',
+      
+    });
+  } catch (err) {
+    // Handle any errors that occur during the process
+    const error = new AppError(err.message, 400);
+    error.sendResponse(res);
+  }
+});
 
 exports.viewStudent = catchAsync(async (req, res) => {
 

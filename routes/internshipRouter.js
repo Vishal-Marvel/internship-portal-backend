@@ -19,7 +19,12 @@ router.post('/completion-update/:id',upload.fields([ // that id is params, url p
 ]), internship.uploadCompletionForm);
 router.route('/:id')
     .get(internship.viewInternship)
-    .put(internship.updateInternship)
+    .put(upload.fields([ // that id is params, url param
+    { name: 'certificate' },
+    { name: 'attendance' },
+    { name: 'feedback' },
+    { name: 'offer_letter' }
+]), internship.updateInternship)
     .delete(internship.deleteInternship)
 router.get('/approval-status/:id', internship.getApprovalStatus);
 router.get('/download-report/:id', internship.downloadReport);

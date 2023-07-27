@@ -70,6 +70,24 @@ exports.updateStaff = catchAsync(async (req, res) => {
 });
 
 exports.deleteStaff = catchAsync(async (req, res) => {
+    try {
+        const staffId = req.params.id;
+
+        // Find the staff in the database based on the provided ID
+        await Staff.findByIdAndDelete(staffId, {tableName: 'staffs'});
+
+    
+        // Send a success response
+        res.status(200).json({
+          status: 'success',
+          message: 'Staff details deleted successfully',
+          
+        });
+      } catch (err) {
+        // Handle any errors that occur during the process
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+      }
 });
 
 exports.migrateMentees = catchAsync(async (req, res) => {

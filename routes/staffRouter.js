@@ -15,6 +15,6 @@ router.route('/:id')
     .delete(staffController.deleteStaff)
 
 router.use(authController.restrictTo("hod", "admin"));
-router.post('/:id/assignRole', authController.assignRoles);
+router.post('/assignRole', authController.assignRoles);
 router.post('/updateMentees', staffController.migrateMentees);
 module.exports = router;
