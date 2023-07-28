@@ -20,11 +20,12 @@ const createStaffsTable = async () => {
                     table.string('phone_no');
                     table.string('password');
                     table.unique(['email'])
+                    console.log('Staffs table created successfully');
                 });
             }
         });
 
-        console.log('Staffs table created successfully');
+
     } catch (error) {
         console.error('Error creating staffs table:', error);
     }
@@ -52,11 +53,12 @@ const createStudentsTable = async () => {
                     // table.string('skills');
                     table.string('staff_id'); // Add staff_id column for the foreign key
                     table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
+                    console.log('Students table created successfully');
                 });
             }
         });
 
-        console.log('Students table created successfully');
+
     } catch (error) {
         console.error('Error creating students table:', error);
     }
@@ -87,12 +89,14 @@ const createInternshipTable = async () => {
                     table.string('attendance');
                     table.string('feedback');
                     table.string('offer_letter');
+                    table.string('approval_status');
                     table.string('student_id').references('students.id').onDelete('CASCADE');
+                    console.log('Internship table created successfully');
                 });
             }
         });
 
-        console.log('Internship table created successfully');
+
     } catch (error) {
         console.error('Error creating internship table:', error);
     }
@@ -124,12 +128,12 @@ const createApprovalTable = async () => {
                     table.string('comments_by_Role')
                     table.date('commented_at')
                     table.string('internship_id').references('internships.id').onDelete('CASCADE');
-
+                    console.log('Approval table created successfully');
                 })
             }
         })
 
-        console.log('Approval table created successfully');
+
     } catch (error) {
         console.error('Error creating approval table:', error);
     }
@@ -142,11 +146,12 @@ const createRolesTable = async () => {
                 return knex.schema.createTable('roles', table=>{
                     table.string('id').primary();
                     table.string('role_name').unique();
+                    console.log('Roles table created successfully');
                 })
             }
         })
 
-        console.log('Roles table created successfully');
+
     } catch (error) {
         console.error('Error creating role table:', error);
     }
@@ -160,12 +165,12 @@ const createStaffRoleTable = async () => {
                     table.string('staff_id').references('staffs.id').onDelete('CASCADE');
                     table.string('role_id').references('roles.id').onDelete('CASCADE');
                     table.primary(['staff_id', 'role_id']);
-
+                    console.log('StaffRole table created successfully');
                 })
             }
         })
 
-        console.log('StaffRole table created successfully');
+
     } catch (error) {
         console.error('Error creating staffrole table:', error);
     }

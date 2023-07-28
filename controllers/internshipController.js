@@ -59,7 +59,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             domain,
             student_id // This is for internships registering by Staffs
         } = req.body;
-        const approval_status = false;
+        const approval_status = "Not Approved";
 
         if(!company_name||
            !company_address||
@@ -199,6 +199,29 @@ exports.viewInternship = catchAsync(async (req,res)=>{
 
 exports.viewInternships = catchAsync(async (req,res)=>{
 
+});
+
+exports.canUpdate = catchAsync(async (req,res)=>{
+    try {
+        const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const endingDate = internship.get('ending_date');
+        endingDate.setDate(endingDate.getDate()+15);
+        if (endingDate > new Date()){
+            res.status(200).json({
+                status: 'success',
+                message: 'Internship details can be updated'
+            });
+        }else{
+            res.status(200).json({
+                status: 'fail',
+                message: 'Internship details cant be updated'
+            });
+        }
+    }
+    catch (err){
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res)
+    }
 });
 
 exports.updateInternship = catchAsync(async (req,res)=>{
@@ -471,7 +494,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Principal - approved",
             });
-            internship.set({approval_status:true})
+            internship.set({approval_status:"Approved"})
             await internship.save();
         } else {
             res.status(406).json({
@@ -493,6 +516,7 @@ exports.sendBack = catchAsync(async (req,res)=>{
     try {
         // const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
+        const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const comments = req.body.comments;
         approval.set({
             comments: comments,
@@ -500,6 +524,8 @@ exports.sendBack = catchAsync(async (req,res)=>{
             comments_by_Role: req.user.role,
             commented_at: new Date()
         })
+        internship.set({approval_status:"Sent Back"})
+        await internship.save();
         await approval.save()
         res.status(200).json({
             status: 'success',
@@ -542,7 +568,33 @@ exports.getApprovalStatus = catchAsync(async (req, res)=>{
 })
 
 exports.reject = catchAsync(async (req,res)=>{
+    try {
+        // const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const approval = await Approval.where({internship_id: req.params.id}).fetch();
+        const internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const comments = req.body.comments;
+        approval.set({
+            comments: comments,
+            comments_by_id: req.user.id,
+            comments_by_Role: req.user.role,
+            commented_at: new Date()
+        })
+        internship.set({approval_status:"Rejected"})
+        await internship.save();
+        await approval.save()
+        res.status(200).json({
+            status: 'success',
+            message: 'Rejected'
+        });
 
+
+    }
+    catch (err){
+        // Handle any errors that occur during the process
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+
+    }
 });
 
 exports.downloadReport = catchAsync(async (req, res) =>{

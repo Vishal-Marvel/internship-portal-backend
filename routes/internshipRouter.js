@@ -26,6 +26,7 @@ router.route('/:id')
         {name: 'offer_letter'}
     ]), internship.updateInternship)
     .delete(internship.deleteInternship)
+router.get('/can-update/:id', internship.canUpdate);
 router.get('/approval-status/:id', internship.getApprovalStatus);
 router.get('/download-report/:id', internship.downloadReport);
 router.get('/download-file/:id', internship.downloadFiles);
