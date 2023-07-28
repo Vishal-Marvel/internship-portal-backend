@@ -12,7 +12,7 @@ const upload = multer({
 
 router.use(authController.protect);
 router.post('/register',upload.single('file'), internship.registerInternship);
-router.post('/completion-update/:id',upload.fields([ // that id is params, url param
+router.post('/completion-update/:id',upload.fields([
     { name: 'certificate' },
     { name: 'attendance' },
     { name: 'feedback' },

@@ -15,7 +15,6 @@ function sleep(ms) {
 }
 const saveFile = async (buffer, mimetype, fileName, originalname) => {
     try {
-        console.log(mimetype);
         if (mimetype !== 'application/pdf') {
             throw new AppError('File type is invalid', 400);
         }
@@ -94,7 +93,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
         const student = await Student.where({id: student_id}).fetch();
         const { buffer, mimetype, originalname } = req.file;
-        const fileName = `${student.get('student_id')}_${company_name}_${new Date()}_offer_letter`; // Append the unique suffix to the file name
+        const fileName = `${student.get('student_id')}_${company_name}_offer_letter`; // Append the unique suffix to the file name
 
         const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
        
@@ -102,7 +101,6 @@ exports.registerInternship = catchAsync(async (req, res) => {
         await internshipDetails.save();
         const id = internshipDetails.get('id');
 
-        
         await internshipDetails.set({
             offer_letter
         })
@@ -110,6 +108,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             internship_id:id
         });
         await approval.save();
+        await internshipDetails.save();
          
         const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
@@ -138,17 +137,20 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
 
     try {
         const id = req.params.id;
+        const internship = await InternshipDetails.where({id: id}).fetch();
+        const student = await Student.where({id: internship.get('student_id')}).fetch();
+
         const { certificate, attendance, feedback } = req.files;
         const { buffer: certificateBuffer, mimetype: certificateMimetype, originalname: certificate_Original } = certificate[0];
-        const certificateFileName = `${id}_certificate_of_completion`;
+        const certificateFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_certificate_of_completion`;
         const certificateId = await saveFile(certificateBuffer, certificateMimetype, certificateFileName, certificate_Original);
 
         const { buffer: attendanceBuffer, mimetype: attendanceMimetype, originalname: attendance_Original } = attendance[0];
-        const attendanceFileName = `${id}_attendance`;
+        const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_attendance`;
         const attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
 
         const { buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original } = feedback[0];
-        const feedbackFileName = `${id}_feedback`;
+        const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_feedback`;
         const feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
 
         await InternshipDetails.findByIdAndUpdate( req.params.id ,{
@@ -184,11 +186,73 @@ exports.updateInternship = catchAsync(async (req,res)=>{
         const updatedData = req.body;
     
         // Find the internship in the database based on the provided ID
-        const internship = await InternshipDetails.findByIdAndUpdate(internshipId, updatedData, {
+        let internship = await InternshipDetails.findByIdAndUpdate(internshipId, updatedData, {
             new: true, // Return the updated document
             runValidators: true, // Run the validation on the updated fields
             tableName: 'internships' // Specify the table name
           });
+        const student = await Student.where({id: internship.get('student_id')}).fetch();
+
+        const { certificate, attendance, feedback, offer_letter } = req.files;
+        let offer_letterId, certificateId, attendanceId, feedbackId;
+        offer_letterId = internship.get('offer_letter');
+        certificateId = internship.get('certificate');
+        attendanceId = internship.get('attendance');
+        feedbackId = internship.get('feedback');
+        if (offer_letter) {
+            const {
+                buffer: offer_letterBuffer,
+                mimetype: offer_letterMimetype,
+                originalname: offer_letterOriginal
+            } = offer_letter[0];
+            const offer_letterFileName = `${student.get('student_id')}_${internship.get('company_name')}_offer_letter`;
+            offer_letterId = await saveFile(offer_letterBuffer, offer_letterMimetype, offer_letterFileName, offer_letterOriginal);
+            const file = await File.where({id: internship.get('offer_letter')}).fetchAll();
+            if (file.length ===1) {
+                await file.models[0].destroy();
+            }
+        }
+        if (certificate) {
+            const {
+                buffer: certificateBuffer,
+                mimetype: certificateMimetype,
+                originalname: certificate_Original
+            } = certificate[0];
+            const certificateFileName = `${student.get('student_id')}_${internship.get('company_name')}_certificate_of_completion`;
+            certificateId = await saveFile(certificateBuffer, certificateMimetype, certificateFileName, certificate_Original);
+            const file = await File.where({id: internship.get('certificate')}).fetchAll();
+            if (file.length ===1) {
+                await file.models[0].destroy();
+            }
+        }
+        if (attendance) {
+            const {
+                buffer: attendanceBuffer,
+                mimetype: attendanceMimetype,
+                originalname: attendance_Original
+            } = attendance[0];
+            const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_attendance`;
+            attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
+            const file = await File.where({id: internship.get('attendance')}).fetchAll();
+            if (file.length ===1) {
+                await file.models[0].destroy();
+            }
+        }
+        if (feedback) {
+            const {buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original} = feedback[0];
+            const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_feedback`;
+            feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
+            const file = await File.where({id: internship.get('feedback')}).fetchAll();
+            if (file.length ===1) {
+                await file.models[0].destroy();
+            }
+        }
+        internship = await InternshipDetails.findByIdAndUpdate( req.params.id ,{
+            certificate: certificateId,
+            attendance: attendanceId,
+            feedback: feedbackId,
+            offer_letter: offer_letterId
+        } );
     
         if (!internship) {
           // If the internship with the provided ID is not found, return an error response
@@ -207,8 +271,9 @@ exports.updateInternship = catchAsync(async (req,res)=>{
         });
       } catch (err) {
         // Handle any errors that occur during the process
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
+        // const error = new AppError(err.message, 400);
+        // error.sendResponse(res);
+        throw err;
       }
 });
 
@@ -242,6 +307,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             if (approval.get('mentor')===1){
                 const error = new AppError("Mentor already Approved", 400);
                 error.sendResponse(res);
+                return;
             }
             approval.set({
                 mentor: true,
@@ -277,10 +343,12 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Mentor - approved",
             });
-        } else if (req.params.role === "internship_coordinator" && approval.get("mentor")) {
+        }
+        else if (req.params.role === "internship-coordinator" && approval.get("mentor")) {
             if (approval.get('internship_coordinator')===1){
-                const error = new AppError("internship_coordinator already Approved", 400);
+                const error = new AppError("Internship Coordinator already Approved", 400);
                 error.sendResponse(res);
+                return;
             }
             approval.set({
                 internship_coordinator: true,
@@ -310,6 +378,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             if (approval.get('hod')===1){
                 const error = new AppError("HOD already Approved", 400);
                 error.sendResponse(res);
+                return;
             }
             approval.set({
                 hod: true,
@@ -317,16 +386,11 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 hod_approved_at:new Date()});
             await approval.save();
         
-            const staffs = await Staff.query((qb) => {
-    
-            qb.whereNull('department').whereNull('sec_sit').andWhereExists(function() {
-                        // Subquery to check if the staff has the role 'tapcell'
-                    this.select('*').from('staff_roles')
-                    .whereRaw('staffs.id = staff_roles.staff_id')
-                    .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                    .where('roles.role_name', 'tapcell');
-                })
-              }).fetchAll();
+            const staffs = await Staff.query((qb) => {qb
+                .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+                .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+                .where('roles.role_name', 'tap-cell');
+            }).fetchAll();
 
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
@@ -343,6 +407,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             if (approval.get('tap-cell')===1){
                 const error = new AppError("Tap-Cell already Approved", 400);
                 error.sendResponse(res);
+                return;
             }
             approval.set({
                 tap_cell: true,
@@ -372,6 +437,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             if (approval.get('principal')===1){
                 const error = new AppError("Principal already Approved", 400);
                 error.sendResponse(res);
+                return;
             }
             approval.set({
                 principal: true,
