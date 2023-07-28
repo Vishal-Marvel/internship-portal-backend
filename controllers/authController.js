@@ -310,19 +310,51 @@ exports.removeRole = catchAsync(async (req, res)=>{
     }
 })
 
-exports.assignRoles = catchAsync(async (req, res) =>{
-    const roles = req.body.roles;
-    const roleObjs = await Promise.all(roles.map(async role => await Role.where({ role_name: role }).fetch()));
+const validateRoleAssignment = (role, data) => {
+    const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' /* Add other roles that require department */];
+    const rolesWithSecSit = ['mentor','internship_coordinator','hod','principal' /* Add other roles that require sec_sit */];
 
-    const roleIds = roleObjs.map(role => role.get('id')); // Extract the role IDs
-    
-    const staff = await Staff.where({ id: req.body.id }).fetch();
-    await staff.roles().attach(roleIds);
-    res.status(200).json({
-        status: "success",
-        message: `${roles} Assigned to ${staff.get('name')}`
-    })
+    if (rolesWithDepartment.includes(role)) {
+        if (!data.department) {
+            throw new Error('Department is required for this role');
+        }
+    }
+
+    if (rolesWithSecSit.includes(role)) {
+        if (!data.sec_sit) {
+            throw new Error('Sec_sit is required for this role');
+        }
+    }
+};
+
+exports.assignRoles = catchAsync(async (req, res) => {
+    try {
+        const roles = req.body.roles;
+        const staff = await Staff.where({ id: req.body.id }).fetch();
+        const staffData = staff.toJSON();
+
+        const roleObjs = await Promise.all(roles.map(async role => await Role.where({ role_name: role }).fetch()));
+        const rolename = roleObjs.map(role => role.get('role_name'));
+        // Assign roles only if staff provides the required information
+        rolename.forEach((role) => {
+            validateRoleAssignment(role, staffData);
+        });
+
+        // Role assignment logic here
+
+        const roleIds = roleObjs.map(role => role.get('id')); // Extract the role IDs
+        await staff.roles().attach(roleIds);
+
+        res.status(200).json({
+            status: 'success',
+            message: `${roles.join(', ')} Assigned to ${staffData.name}`,
+        });
+    } catch (err) {
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+    }
 });
+
 
 exports.restrictTo = (...roles) => {
     return (req, res, next) => {
