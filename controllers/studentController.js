@@ -20,13 +20,12 @@ exports.updateStudent = catchAsync(async (req, res) => {
           phone_no,
           total_days_internship,
           placement_status,
-          placed_company,
-          staff_id,
+          placed_company
       } = req.body;
       const updatedData = {
         name, sec_sit, year_of_studying, phone_no,total_days_internship,
         placement_status,
-        placed_company,staff_id
+        placed_company
       }
     
         // Find the student in the database based on the provided ID
@@ -65,7 +64,7 @@ exports.deleteStudent = catchAsync(async (req, res) => {
     const studentId = req.user.id;
 
     // Find the student in the database based on the provided ID
-    await Staff.findByIdAndDelete(studentId, {tableName: 'students'});
+    await Student.findByIdAndDelete(studentId, {tableName: 'students'});
 
 
     // Send a success response
