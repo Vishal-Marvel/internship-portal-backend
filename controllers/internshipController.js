@@ -40,6 +40,7 @@ const saveFile = async (buffer, mimetype, fileName, originalname) => {
 
 exports.registerInternship = catchAsync(async (req, res) => {
     try {
+
         // Retrieve the submitted data from the request body
         let {
             company_name,
@@ -59,6 +60,22 @@ exports.registerInternship = catchAsync(async (req, res) => {
             student_id // This is for internships registering by Staffs
         } = req.body;
         const approval_status = false;
+
+        if(!company_name||
+           !company_address||
+            !company_ph_no||
+            !current_cgpa||
+            !sin_tin_gst_no||
+            !academic_year||
+            !industry_supervisor_name||
+            !industry_supervisor_ph_no||
+            !mode_of_intern||
+            !starting_date||
+            !ending_date||
+            !location||
+            !domain){
+             throw new AppError("All fields are required", 400);
+        }
         //special case
         if (req.user.roles.includes("student")){
             const student = await Student.where({id:req.user.id}).fetch();
@@ -70,6 +87,9 @@ exports.registerInternship = catchAsync(async (req, res) => {
                 return;
             }
             student_id = req.user.id;
+        }
+        else{
+            if(!student_id) throw new AppError("All fields are required", 400);
         }
 
         // Create a new instance of the InternshipDetails model
@@ -93,13 +113,14 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
         const student = await Student.where({id: student_id}).fetch();
         const { buffer, mimetype, originalname } = req.file;
-        const fileName = `${student.get('student_id')}_${company_name}_offer_letter`; // Append the unique suffix to the file name
+        const fileName = `${student.get('student_id')}_${company_name}_${new Date()}_offer_letter`; // Append the unique suffix to the file name
 
         const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
-       
+
         // Save the internship details to the database
         await internshipDetails.save();
         const id = internshipDetails.get('id');
+
 
         await internshipDetails.set({
             offer_letter
@@ -109,7 +130,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
         await approval.save();
         await internshipDetails.save();
-         
+
         const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
         await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
@@ -253,7 +274,7 @@ exports.updateInternship = catchAsync(async (req,res)=>{
             feedback: feedbackId,
             offer_letter: offer_letterId
         } );
-    
+
         if (!internship) {
           // If the internship with the provided ID is not found, return an error response
           return res.status(404).json({
@@ -271,9 +292,8 @@ exports.updateInternship = catchAsync(async (req,res)=>{
         });
       } catch (err) {
         // Handle any errors that occur during the process
-        // const error = new AppError(err.message, 400);
-        // error.sendResponse(res);
-        throw err;
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
       }
 });
 
@@ -315,7 +335,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 mentor_approved_at:new Date()
             });
             await approval.save();
-            
+
             // const staffs = await Staff.where(
             //    { department: student.get('department'),
             //     sec_sit: student.get('sec_sit')
@@ -385,7 +405,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 hod_id:req.user.id,
                 hod_approved_at:new Date()});
             await approval.save();
-        
+
             const staffs = await Staff.query((qb) => {qb
                 .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
                 .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
@@ -414,7 +434,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 tap_cell_id:req.user.id,
                 tap_cell_approved_at:new Date()});
             await approval.save();
-       
+
             const staffs = await Staff.query((qb) => {
                 qb.where({
                   sec_sit: student.get('sec_sit')
@@ -446,7 +466,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             await approval.save();
             await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
             student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
-          
+
             res.status(200).json({
                 status: "success",
                 message: "Principal - approved",
@@ -466,7 +486,6 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         // Handle any errors that occur during the process
         const error = new AppError(err.message, 400);
         error.sendResponse(res);
-        // throw err;
     }
 });
 
