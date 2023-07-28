@@ -89,8 +89,6 @@ exports.staffSignup = catchAsync(async (req, res) => {
 
         if (
             !name ||
-            !sec_sit ||
-            !department ||
             !email ||
             !phone_no ||
             !password
@@ -317,6 +315,7 @@ exports.assignRoles = catchAsync(async (req, res) =>{
     const roleObjs = await Promise.all(roles.map(async role => await Role.where({ role_name: role }).fetch()));
 
     const roleIds = roleObjs.map(role => role.get('id')); // Extract the role IDs
+    
     const staff = await Staff.where({ id: req.body.id }).fetch();
     await staff.roles().attach(roleIds);
     res.status(200).json({

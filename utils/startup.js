@@ -16,6 +16,28 @@ exports.performStartUp = async function () {
         });
         await internship_coordinator.save();
 
+        const mentor = new Role({
+            role_name: "mentor"
+        });
+        await mentor.save();
+
+        const principal = new Role({
+            role_name: "principal"
+        });
+        await principal.save();
+
+
+        const tap_cell = new Role({
+            role_name: "tap-cell"
+        });
+        await tap_cell.save();
+
+        const hod = new Role({
+            role_name: "hod"
+        });
+        await hod.save();
+
+
     } catch (e) {
         if (e.code === "ER_DUP_ENTRY") {
 
