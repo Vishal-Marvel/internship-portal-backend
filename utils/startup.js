@@ -10,6 +10,11 @@ exports.performStartUp = async function () {
             role_name: "admin"
         });
         await admin.save();
+        
+        const internship_coordinator = new Role({
+            role_name: "internship_coordinator"
+        });
+        await internship_coordinator.save();
 
     } catch (e) {
         if (e.code === "ER_DUP_ENTRY") {

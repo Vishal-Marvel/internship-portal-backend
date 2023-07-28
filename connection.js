@@ -183,7 +183,7 @@ knex.schema.hasTable("files").then(exists =>{
     if (!exists){
         return knex.schema.createTable('files', table=>{
             table.string('id').primary();
-            table.string('file_name').unique();
+            table.string('file_name');
             table.specificType('file', 'longblob');
             table.date('uploaded_at');
         })

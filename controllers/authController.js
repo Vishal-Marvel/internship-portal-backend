@@ -9,10 +9,6 @@ const jwt = require("jsonwebtoken");
 exports.studentSignUp = catchAsync(async (req, res) => {
 
     try {
-        const mentor_email = req.body.mentor_email;
-        const staff = await Staff.where({email:mentor_email}).fetch();
-        req.body.staff_id = staff.id;
-        req.body.role = "student";
         const {
             name,
             sec_sit,
@@ -23,8 +19,12 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             email,
             phone_no,
             password,
-            staff_id
+            mentor_email
         } = req.body;
+
+        const staff = await Staff.where({email:mentor_email}).fetch();
+        staff_id = staff.id;
+        
         const student = new Student({
             name,
             sec_sit,
