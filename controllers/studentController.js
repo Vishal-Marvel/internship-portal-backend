@@ -20,7 +20,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
           phone_no,
           total_days_internship,
           placement_status,
-          placed_company,
+          placed_company
       } = req.body;
       const updatedData = {
         name, sec_sit, year_of_studying, phone_no,total_days_internship,

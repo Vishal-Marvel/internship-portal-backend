@@ -7,6 +7,7 @@ const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
 const File = require("../models/fileModel");
 const fs = require('fs');
+const cron = require('node-cron');
 const {generateInternshipDetails} = require("../utils/pdfGenerator");
 
 function sleep(ms) {

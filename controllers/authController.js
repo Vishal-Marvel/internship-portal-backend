@@ -12,7 +12,6 @@ exports.studentSignUp = catchAsync(async (req, res) => {
         const mentor_email = req.body.mentor_email;
         const staff = await Staff.where({email:mentor_email}).fetch();
         req.body.staff_id = staff.id;
-        req.body.role = "student";
         const {
             name,
             sec_sit,
