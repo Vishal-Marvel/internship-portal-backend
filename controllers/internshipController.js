@@ -59,6 +59,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             domain,
             student_id // This is for students registering by Staffs
         } = req.body;
+        const approval_status = false;
         //special case
         if (req.user.role === "student"){
             const student = await Student.where({id:req.user.id}).fetch();
@@ -89,6 +90,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             location,
             domain,
             student_id,
+            approval_status
         });
 
         // Save the internship details to the database
@@ -234,7 +236,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
         const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const student = await Student.where({id: internship.get('student_id')}).fetch();
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
-        if (req.user.role === "mentor") {
+        if (req.params.role === "mentor") {
             approval.set({
                 mentor: true,
                 mentor_id:req.user.id,
@@ -257,7 +259,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Mentor - approved",
             });
-        } else if (req.user.role === "internship_coordinator" && approval.get("mentor")) {
+        } else if (req.params.role === "internship_coordinator" && approval.get("mentor")) {
             approval.set({
                 internship_coordinator: true,
                 internship_coordinator_id:req.user.id,
@@ -275,7 +277,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Internship Coordinator - approved",
             });
-        } else if (req.user.role === "hod" && approval.get("mentor") && approval.get("internship_coordinator")) {
+        } else if (req.params.role === "hod" && approval.get("mentor") && approval.get("internship_coordinator")) {
             approval.set({
                 hod: true,
                 hod_id:req.user.id,
@@ -289,7 +291,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "HOD - approved",
             });
-        } else if (req.user.role === "tap-cell" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod")) {
+        } else if (req.params.role === "tap-cell" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod")) {
             approval.set({
                 tap_cell: true,
                 tap_cell_id:req.user.id,
@@ -303,7 +305,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Tap-Cell - approved",
             });
-        } else if (req.user.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
+        } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
             approval.set({
                 principal: true,
                 principal_id:req.user.id,
@@ -315,6 +317,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Principal - approved",
             });
+            internship.set({approval_status:true})
+            await internship.save();
         } else {
             res.status(406).json({
                 status: "fail",
