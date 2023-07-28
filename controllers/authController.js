@@ -9,9 +9,6 @@ const jwt = require("jsonwebtoken");
 exports.studentSignUp = catchAsync(async (req, res) => {
 
     try {
-        const mentor_email = req.body.mentor_email;
-        const staff = await Staff.where({email:mentor_email}).fetch();
-        req.body.staff_id = staff.id;
         const {
             name,
             sec_sit,
@@ -22,8 +19,27 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             email,
             phone_no,
             password,
-            staff_id
+            mentor_email
         } = req.body;
+
+        if (
+            !name ||
+            !sec_sit ||
+            !student_id ||
+            !year_of_studying ||
+            !register_num ||
+            !department ||
+            !email ||
+            !phone_no ||
+            !password ||
+            !mentor_email
+          ) {
+            throw new AppError("All fields are required", 400);
+          }
+
+        const staff = await Staff.where({email:mentor_email}).fetch();
+        staff_id = staff.id;
+        
         const student = new Student({
             name,
             sec_sit,
@@ -70,6 +86,18 @@ exports.staffSignup = catchAsync(async (req, res) => {
             phone_no,
             password
         } = req.body;
+
+        if (
+            !name ||
+            !sec_sit ||
+            !department ||
+            !email ||
+            !phone_no ||
+            !password
+          ) {
+            throw new AppError("All fields are required", 400);
+          }
+
         const staff = new Staff({
             name,
             department,
