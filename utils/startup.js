@@ -11,10 +11,10 @@ exports.performStartUp = async function () {
         });
         await admin.save();
         
-        const internship_coordinator = new Role({
-            role_name: "internship_coordinator"
+        const internshipcoordinator = new Role({
+            role_name: "internshipcoordinator"
         });
-        await internship_coordinator.save();
+        await internshipcoordinator.save();
 
         const mentor = new Role({
             role_name: "mentor"
@@ -28,7 +28,7 @@ exports.performStartUp = async function () {
 
 
         const tap_cell = new Role({
-            role_name: "tap-cell"
+            role_name: "tapcell"
         });
         await tap_cell.save();
 
