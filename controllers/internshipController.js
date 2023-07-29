@@ -54,7 +54,6 @@ exports.registerInternship = catchAsync(async (req, res) => {
             mode_of_intern,
             starting_date,
             ending_date,
-            days_of_internship,
             location,
             domain,
             student_id // This is for internships registering by Staffs
@@ -373,7 +372,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                   sec_sit: student.get('sec_sit')
                 }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
                   .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'internship_coordinator');
+                  .where('roles.role_name', 'internship-coordinator');
               }).fetchAll();
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
@@ -417,7 +416,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Internship Coordinator - approved",
             });
-        } else if (req.params.role === "hod" && approval.get("mentor") && approval.get("internship_coordinator")) {
+        } else if (req.params.role === "hod" && approval.get("mentor") && approval.get("internship-coordinator")) {
             if (approval.get('hod')===1){
                 const error = new AppError("HOD already Approved", 400);
                 error.sendResponse(res);
@@ -446,7 +445,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "HOD - approved",
             });
-        } else if (req.params.role === "tap-cell" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod")) {
+        } else if (req.params.role === "tap-cell" && approval.get("mentor") && approval.get("internship-coordinator") && approval.get("hod")) {
             if (approval.get('tap-cell')===1){
                 const error = new AppError("Tap-Cell already Approved", 400);
                 error.sendResponse(res);
@@ -476,7 +475,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Tap-Cell - approved",
             });
-        } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internship_coordinator") && approval.get("hod") && approval.get("tap_cell")) {
+        } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internship-coordinator") && approval.get("hod") && approval.get("tap_cell")) {
             if (approval.get('principal')===1){
                 const error = new AppError("Principal already Approved", 400);
                 error.sendResponse(res);
@@ -547,9 +546,9 @@ exports.getApprovalStatus = catchAsync(async (req, res)=>{
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
         const approval_status = {
             mentor: approval.get('mentor'),
-            internship_coordinator: approval.get('internship_coordinator'),
+            internship_coordinator: approval.get('internship-coordinator'),
             hod: approval.get('hod'),
-            tap_cell: approval.get('tap_cell'),
+            tap_cell: approval.get('tap-cell'),
             principal: approval.get('principal'),
             comments: approval.get('comments'),
 

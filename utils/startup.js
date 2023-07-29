@@ -12,7 +12,7 @@ exports.performStartUp = async function () {
         await admin.save();
         
         const internship_coordinator = new Role({
-            role_name: "internship_coordinator"
+            role_name: "internship-coordinator"
         });
         await internship_coordinator.save();
 
