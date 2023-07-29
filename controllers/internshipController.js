@@ -10,6 +10,7 @@ const fs = require('fs');
 const {generateInternshipDetails} = require("../utils/pdfGenerator");
 const Role = require("../models/roleModel");
 const moment = require('moment');
+const cron = require('node-cron');
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -326,24 +327,51 @@ exports.updateInternship = catchAsync(async (req,res)=>{
 });
 
 exports.deleteInternship = catchAsync(async (req,res)=>{
-    try {
-        const internshipId = req.params.id;
+    // try {
+        // const internshipId = req.params.id;
 
-        // Find the internship in the database based on the provided ID
-        await InternshipDetails.findByIdAndDelete(internshipId, {tableName: 'internships'});
+        // // Find the internship in the database based on the provided ID
+        // await InternshipDetails.findByIdAndDelete(internshipId, {tableName: 'internships'});
 
     
-        // Send a success response
-        res.status(200).json({
-          status: 'success',
-          message: 'Internship deleted successfully',
+        // // Send a success response
+        // res.status(200).json({
+        //   status: 'success',
+        //   message: 'Internship deleted successfully',
           
-        });
-      } catch (err) {
-        // Handle any errors that occur during the process
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
-      }
+        // });
+    //   } catch (err) {
+    //     // Handle any errors that occur during the process
+    //     const error = new AppError(err.message, 400);
+    //     error.sendResponse(res);
+    //   }
+
+    cron.schedule('39 13 * * *', async () => {
+        try {
+          // Fetch internships that need to be deleted based on the specified conditions
+          const internshipsToDelete = await knex('internships')
+            .leftJoin('students', 'internships.student_id', 'students.id')
+            .where((builder) => {
+              // Conditions to delete internships
+              builder.where('students.id', null) // If the student is deleted in the student table
+                .orWhere('approval_status', 'rejected') // If the approval is rejected
+                .orWhere((subQuery) => {
+                  // If the internship is incomplete (failed to submit attendance or certificate file within 30 days)
+                  subQuery.where('certificate', null).andWhereRaw('DATEDIFF(ending_date, CURDATE()) >= 30');
+                });
+            });
+      
+          // Perform the deletion of the fetched internships
+          for (const internship of internshipsToDelete) {
+            await knex('internships').where('id', internship.id).del();
+            console.log(`Deleted internship with ID ${internship.id}`);
+          }
+      
+          console.log(`Deleted ${internshipsToDelete.length} internships.`);
+        } catch (error) {
+          console.error('Error deleting internships:', error);
+        }
+      });
 });
 
 exports.approveInternship = catchAsync(async (req,res)=>{
