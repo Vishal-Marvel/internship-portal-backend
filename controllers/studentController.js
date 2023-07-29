@@ -82,6 +82,21 @@ exports.deleteStudent = catchAsync(async (req, res) => {
 
 exports.viewStudent = catchAsync(async (req, res) => {
 
+  try {
+    // Fetch all students from the database using Bookshelf model
+    const students = await Student.fetchAll();
+
+    // Render the 'student' view and pass the students data as a variable
+    res.render('student', { students });
+  } catch (err) {
+    // Handle any errors that occur during the process
+    res.status(500).json({
+      status: 'fail',
+      message: 'Failed to fetch student details',
+      error: err.message,
+    });
+  }
+  
 });
 
 exports.viewStudentInternship = catchAsync(async (req, res) => {
