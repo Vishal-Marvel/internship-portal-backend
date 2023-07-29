@@ -9,6 +9,7 @@ const File = require("../models/fileModel");
 const fs = require('fs');
 const {generateInternshipDetails} = require("../utils/pdfGenerator");
 const Role = require("../models/roleModel");
+const moment = require('moment');
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -75,6 +76,11 @@ exports.registerInternship = catchAsync(async (req, res) => {
             !domain){
              throw new AppError("All fields are required", 400);
         }
+
+        const startDate = moment(starting_date);
+        const endDate = moment(ending_date);
+        const days_of_internship = endDate.diff(startDate, 'days') + 1;
+
         //special case
         if (req.user.roles.includes("student")){
             const student = await Student.where({id:req.user.id}).fetch();
@@ -364,7 +370,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             // }).fetchAll({withRelated:'roles'});
             // const filteredStaffs = staffs.filter(staff => {
             //     const roles = staff.related('roles').pluck('role_name');
-            //     return roles.includes('internship_coordinator');
+            //     return roles.includes('internshipcoordinator');
             //   });
             const staffs = await Staff.query((qb) => {
                 qb.where({
@@ -372,7 +378,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                   sec_sit: student.get('sec_sit')
                 }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
                   .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'internship-coordinator');
+                  .where('roles.role_name', 'internshipcoordinator');
               }).fetchAll();
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
@@ -386,16 +392,16 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "Mentor - approved",
             });
         }
-        else if (req.params.role === "internship-coordinator" && approval.get("mentor")) {
-            if (approval.get('internship_coordinator')===1){
+        else if (req.params.role === "internshipcoordinator" && approval.get("mentor")) {
+            if (approval.get('internshipcoordinator')===1){
                 const error = new AppError("Internship Coordinator already Approved", 400);
                 error.sendResponse(res);
                 return;
             }
             approval.set({
-                internship_coordinator: true,
-                internship_coordinator_id:req.user.id,
-                internship_coordinator_approved_at:new Date()});
+                internshipcoordinator: true,
+                internshipcoordinator_id:req.user.id,
+                internshipcoordinator_approved_at:new Date()});
             await approval.save();
             const staffs = await Staff.query((qb) => {
                 qb.where({
@@ -416,7 +422,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "Internship Coordinator - approved",
             });
-        } else if (req.params.role === "hod" && approval.get("mentor") && approval.get("internship-coordinator")) {
+        } 
+        else if (req.params.role === "hod" && approval.get("mentor") && approval.get("internshipcoordinator")) {
             if (approval.get('hod')===1){
                 const error = new AppError("HOD already Approved", 400);
                 error.sendResponse(res);
@@ -431,7 +438,7 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             const staffs = await Staff.query((qb) => {qb
                 .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
                 .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                .where('roles.role_name', 'tap-cell');
+                .where('roles.role_name', 'tapcell');
             }).fetchAll();
 
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
@@ -445,16 +452,16 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 status: "success",
                 message: "HOD - approved",
             });
-        } else if (req.params.role === "tap-cell" && approval.get("mentor") && approval.get("internship-coordinator") && approval.get("hod")) {
-            if (approval.get('tap-cell')===1){
-                const error = new AppError("Tap-Cell already Approved", 400);
+        } else if (req.params.role === "tapcell" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod")) {
+            if (approval.get('tapcell')===1){
+                const error = new AppError("tapcell already Approved", 400);
                 error.sendResponse(res);
                 return;
             }
             approval.set({
-                tap_cell: true,
-                tap_cell_id:req.user.id,
-                tap_cell_approved_at:new Date()});
+                tapcell: true,
+                tapcell_id:req.user.id,
+                tapcell_approved_at:new Date()});
             await approval.save();
 
             const staffs = await Staff.query((qb) => {
@@ -473,9 +480,9 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             }
             res.status(200).json({
                 status: "success",
-                message: "Tap-Cell - approved",
+                message: "tapcell - approved",
             });
-        } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internship-coordinator") && approval.get("hod") && approval.get("tap_cell")) {
+        } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod") && approval.get("tapcell")) {
             if (approval.get('principal')===1){
                 const error = new AppError("Principal already Approved", 400);
                 error.sendResponse(res);
@@ -520,7 +527,7 @@ exports.sendBack = catchAsync(async (req,res)=>{
         approval.set({
             comments: comments,
             comments_by_id: req.user.id,
-            comments_by_Role: req.user.role,
+            comments_by_Role: req.params.role,
             commented_at: new Date()
         })
         internship.set({approval_status:"Sent Back"})
@@ -546,9 +553,9 @@ exports.getApprovalStatus = catchAsync(async (req, res)=>{
         const approval = await Approval.where({internship_id: req.params.id}).fetch();
         const approval_status = {
             mentor: approval.get('mentor'),
-            internship_coordinator: approval.get('internship-coordinator'),
+            internshipcoordinator: approval.get('internshipcoordinator'),
             hod: approval.get('hod'),
-            tap_cell: approval.get('tap-cell'),
+            tap_cell: approval.get('tapcell'),
             principal: approval.get('principal'),
             comments: approval.get('comments'),
 

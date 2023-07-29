@@ -65,7 +65,7 @@ async function generateInternshipDetails(internship, student, approval) {
   addTableRow('Location:', internship.get('location'));
   addTableRow('Domain:', internship.get('domain'));
   addTableRow('Mentor Approved:', approval.get('mentor')?"Approved":"Not Approved");
-  addTableRow('Internship Coordinator Approved:', approval.get('internship_coordinator')?"Approved":"Not Approved");
+  addTableRow('Internship Coordinator Approved:', approval.get('internshipcoordinator')?"Approved":"Not Approved");
   addTableRow('HOD Approved:', approval.get('hod')?"Approved":"Not Approved");
   addTableRow('Tap Cell Approved:', approval.get('tap_cell')?"Approved":"Not Approved");
   addTableRow('Principal Approved:', approval.get('principal')?"Approved":"Not Approved");

@@ -33,7 +33,7 @@ router.get('/download-file/:id', internship.downloadFiles);
 
 router.use(authController.doNotAllow('student')); // Restricting Students
 router.post('/approval/:role/:id', internship.approveInternship);
-router.post('/send-back/:id', internship.sendBack);
-router.post('/reject/:id', internship.reject);
+router.post('/send-back/:role/:id', internship.sendBack);
+router.post('/reject/:role/:id', internship.reject);
 router.get('/all', internship.viewInternships);
 module.exports = router;
