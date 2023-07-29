@@ -311,8 +311,8 @@ exports.removeRole = catchAsync(async (req, res)=>{
 })
 
 const validateRoleAssignment = (role, data) => {
-    const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' /* Add other roles that require department */];
-    const rolesWithSecSit = ['mentor','internship_coordinator','hod','principal' /* Add other roles that require sec_sit */];
+    const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
+    const rolesWithSecSit = ['mentor','internship_coordinator','hod','principal' ];
 
     if (rolesWithDepartment.includes(role)) {
         if (!data.department) {

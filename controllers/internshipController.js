@@ -212,7 +212,7 @@ exports.canUpdate = catchAsync(async (req,res)=>{
                 message: 'Internship details can be updated'
             });
         }else{
-            res.status(200).json({
+            res.status(400).json({
                 status: 'fail',
                 message: 'Internship details cant be updated'
             });
@@ -228,9 +228,18 @@ exports.updateInternship = catchAsync(async (req,res)=>{
     try {
         const internshipId = req.params.id;
         const updatedData = req.body;
-    
+        let internship = await InternshipDetails.where({id: req.params.id}).fetch();
+        const endingDate = internship.get('ending_date');
+        endingDate.setDate(endingDate.getDate()+15);
+        if (endingDate < new Date()){
+            res.status(400).json({
+                status: 'fail',
+                message: 'Internship details cant be updated'
+            });
+            return;
+        }
         // Find the internship in the database based on the provided ID
-        let internship = await InternshipDetails.findByIdAndUpdate(internshipId, updatedData, {
+        internship = await InternshipDetails.findByIdAndUpdate(internshipId, updatedData, {
             new: true, // Return the updated document
             runValidators: true, // Run the validation on the updated fields
             tableName: 'internships' // Specify the table name
