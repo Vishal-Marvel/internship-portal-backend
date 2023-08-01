@@ -15,4 +15,4 @@ Then create a `config.env ` file in the same directory as the app.js with the fo
 
 `DATABASE=your_mysql_database_name`
 
-Then `npm server.js`
+Then `npm run start`
