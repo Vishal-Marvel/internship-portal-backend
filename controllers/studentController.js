@@ -117,10 +117,9 @@ exports.viewStudent = catchAsync(async (req, res) => {
         },
       });
     } else {
-      return res.status(403).json({
-        status: 'fail',
-        message: 'Unauthorized access to student details',
-      });
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
     }
   } 
   catch (err) {

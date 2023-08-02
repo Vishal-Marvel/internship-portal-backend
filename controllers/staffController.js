@@ -142,10 +142,9 @@ exports.viewStaff = catchAsync(async (req, res) => {
         },
       });
     } else {
-      return res.status(403).json({
-        status: 'fail',
-        message: 'Unauthorized access to staff details',
-      });
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
     }
   } catch (err) {
     // Handle any errors that occur during the process
@@ -224,10 +223,9 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
         },
       });
     } else {
-      return res.status(403).json({
-        status: 'fail',
-        message: 'Unauthorized access to view multiple staffs',
-      });
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
     }
   } catch (err) {
     // Handle any errors that occur during the process
@@ -304,10 +302,9 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
         },
       });
     } else {
-      return res.status(403).json({
-        status: 'fail',
-        message: 'Unauthorized access to view multiple students',
-      });
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
     }
   } catch (err) {
     // Handle any errors that occur during the process
