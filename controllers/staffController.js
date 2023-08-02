@@ -5,7 +5,20 @@ const AppError = require('../utils/appError');
 
 exports.viewMenteeStudents = catchAsync(async (req, res) => {
     try {
-        const students = await Student.where({ staff_id: req.params.id }).fetchAll();
+        let staff_id;
+        if (req.params.id){
+            staff_id = req.params.id;
+        }
+        else if (req.user.roles.includes('mentor')){
+            staff_id = req.params.id;
+        }
+        else{
+            return res.status(403).json({
+                status: 'fail',
+                message: 'Unauthorized access',
+            });
+        }
+        const students = await Student.where({ staff_id: staff_id }).fetchAll();
         const studentNames = students.map(student => student.get('name'));
         const studentIds = students.map(student => student.get('id'));
         const studentStudentIds = students.map(student => student.get('student_id'));

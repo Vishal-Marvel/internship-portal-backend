@@ -10,7 +10,7 @@ router.use(authController.protect)
 router.route('/:id')
     .put(studentController.updateStudent)
     .delete(studentController.deleteStudent);
-router.get(authController.restrictTo('hod','principal','internshipcoordinator','mentor','ceo'),'/viewStudent/:id',studentController.viewStudent);
+router.get('/viewStudent/:id', authController.restrictTo('hod','principal','internshipcoordinator','mentor','ceo'),studentController.viewStudent);
 router.get('/viewStudent',studentController.viewStudent);
 router.get('/:id/internships', studentController.viewStudentInternship);
 
