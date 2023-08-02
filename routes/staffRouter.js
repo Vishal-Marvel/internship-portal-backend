@@ -12,9 +12,9 @@ router.get('/:id/mentee-students', staffController.viewMenteeStudents);
 router.route('/:id')
     .put(staffController.updateStaff)
     .delete(staffController.deleteStaff)
-router.get('/viewStaff/:id',staffController.viewStaff)
-router.get('/viewMultipleStaff',staffController.viewMultipleStaff)
-router.get('/viewMultipleStudent',staffController.viewMultipleStudent)
+router.get('/viewStaff/:id',staffController.viewStaff);
+router.get('/viewMultipleStaff',staffController.viewMultipleStaff);
+router.get('/viewMultipleStudent',staffController.viewMultipleStudent);
 router.use(authController.restrictTo("hod", "admin")); // router.use(authController.restrictTo(staffUpdateRoles));
 router.post('/assignRole', authController.assignRoles);
 router.post('/updateMentees', staffController.migrateMentees);

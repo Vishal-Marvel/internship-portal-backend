@@ -10,7 +10,7 @@ router.use(authController.protect)
 router.route('/:id')
     .put(studentController.updateStudent)
     .delete(studentController.deleteStudent);
-router.get('/viewStudent/:id',studentController.viewStudent)
+router.get('/viewStudent/:id',studentController.viewStudent);
 router.get('/:id/internships', studentController.viewStudentInternship);
 
 module.exports = router;
