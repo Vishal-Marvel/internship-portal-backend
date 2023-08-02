@@ -8,6 +8,7 @@ router.post('/login', authController.staffLogin);
 
 router.use(authController.protect);
 router.use(authController.doNotAllow("student"));
+router.get('/mentee-students',authController.restrictTo('mentor'), staffController.viewMenteeStudents);
 router.get('/:id/mentee-students', staffController.viewMenteeStudents);
 router.route('/:id')
     .put(staffController.updateStaff)
