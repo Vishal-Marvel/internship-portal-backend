@@ -143,7 +143,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
     }
 })
 
-exports.staffsSignup = catchAsync(async (req, res) =>{
+exports.multipleStaffSignup = catchAsync(async (req, res) =>{
     try {
         if (!req.file) {
             const error =  new AppError('No Excel file uploaded', 400);

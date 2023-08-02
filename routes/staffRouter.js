@@ -23,5 +23,5 @@ router.route('/:id')
 router.use(authController.restrictTo("hod", "admin")); // router.use(authController.restrictTo(staffUpdateRoles));
 router.post('/assignRole', authController.assignRoles);
 router.post('/updateMentees', staffController.migrateMentees);
-router.post('/addStaffs', upload.single('file'),  authController.staffsSignup)
+router.post('/addStaffs', upload.single('file'),  authController.multipleStaffSignup)
 module.exports = router;
