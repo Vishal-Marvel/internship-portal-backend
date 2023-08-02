@@ -81,14 +81,42 @@ exports.deleteStudent = catchAsync(async (req, res) => {
 });
 
 exports.viewStudent = catchAsync(async (req, res) => {
-
   try {
-    // Fetch all students from the database using Bookshelf model
-    const students = await Student.fetchAll();
+   // const loggedInUserId = req.user.id; 
+    const loggedInUserRole = req.user.roles;
+    const isHOD = loggedInUserRole.includes('hod');
+    const isPrincipal = loggedInUserRole.includes('principal');
+    const isInternshipCoordinator = loggedInUserRole.includes('internshipcoordinator');
+    const isStudent = loggedInUserRole.includes('student');
+    const studentId = req.params.id; // ID of the student to view
 
-    // Render the 'student' view and pass the students data as a variable
-    res.render('student', { students });
-  } catch (err) {
+    // Fetch the student from the database based on the studentId
+    const student = await Student.where({ id: studentId }).fetch();
+
+    if (!student) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Student not found',
+      });
+    }
+
+  
+    if (isStudent || isHOD || isPrincipal|| isInternshipCoordinator) {
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          student,
+        },
+      });
+    } else {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Unauthorized access to student details',
+      });
+    }
+  } 
+  catch (err) {
     // Handle any errors that occur during the process
     res.status(500).json({
       status: 'fail',

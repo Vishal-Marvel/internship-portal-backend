@@ -37,6 +37,11 @@ exports.performStartUp = async function () {
         });
         await hod.save();
 
+        const ceo = new Role({
+            role_name: "ceo"
+        });
+        await ceo.save();
+
 
     } catch (e) {
         if (e.code === "ER_DUP_ENTRY") {

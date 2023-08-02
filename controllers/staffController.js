@@ -23,8 +23,6 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
     }
 });
 
-exports.viewStaff = catchAsync(async (req, res) => {
-});
 
 exports.updateStaff = catchAsync(async (req, res) => {
     try {
@@ -109,3 +107,191 @@ exports.migrateMentees = catchAsync(async (req, res) => {
         await err.sendResponse(res);
     }
 })
+
+exports.viewStaff = catchAsync(async (req, res) => {
+  try {
+    const loggedInStaffId = req.user.id; // ID of the logged-in staff member
+    const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+    const isHOD = loggedInStaffRole.includes('hod');
+    const isPrincipal = loggedInStaffRole.includes('principal');
+
+    const staffId = req.params.id; // ID of the staff to view
+
+    // Fetch the staff from the database based on the staffId
+    const staff = await Staff.where({ id: staffId }).fetch();
+
+    if (!staff) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Staff not found',
+      });
+    }
+
+    // If the logged-in staff is the same as the staff being viewed or is higher staff, allow access
+    if (staffId === loggedInStaffId || isHOD || isPrincipal) {
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staff,
+        },
+      });
+    } else {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Unauthorized access to staff details',
+      });
+    }
+  } catch (err) {
+    // Handle any errors that occur during the process
+    res.status(500).json({
+      status: 'fail',
+      message: 'Failed to fetch staff details',
+      error: err.message,
+    });
+  }
+});
+
+
+exports.viewMultipleStaff = catchAsync(async (req, res) => {
+  
+  try {
+    const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+    const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
+    const isHOD = loggedInStaffRole.includes('hod');
+    const isPrincipal = loggedInStaffRole.includes('principal');
+
+    if (isHOD) {
+      // Fetch all staffs in the same department as the HOD
+      const department = req.user.department;
+      const staffs = await Staff.where({ department }).fetchAll();
+
+      if (!staffs || staffs.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No staff found in the department',
+        });
+      }
+
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staffs,
+        },
+      });
+    } else if (isPrincipal) {
+      // Fetch all staffs in the same SEC or SIT as the Principal
+      const staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
+
+      if (!staffs || staffs.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: `No staff found in ${loggedInStaffSecSit}`,
+        });
+      }
+
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staffs,
+        },
+      });
+    } else {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Unauthorized access to view multiple staffs',
+      });
+    }
+  } catch (err) {
+    // Handle any errors that occur during the process
+    res.status(500).json({
+      status: 'fail',
+      message: 'Failed to fetch staff details',
+      error: err.message,
+    });
+  }
+});
+
+exports.viewMultipleStudent = catchAsync(async (req, res) => {
+  
+  try {
+    const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+    const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
+    const isCEOOrTapCell = loggedInStaffRole.includes('ceo') || loggedInStaffRole.includes( 'tapcell');
+    const isPrincipal = loggedInStaffRole.includes('principal');
+    const isHODOrCoordinator = loggedInStaffRole.includes('hod') || loggedInStaffRole.includes('internshipcoordinator');
+
+    if (isCEOOrTapCell) {
+      // Fetch all students from the database
+      const students = await Student.fetchAll();
+
+      if (!students || students.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No students found in the database',
+        });
+      }
+
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          students,
+        },
+      });
+    } else if (isPrincipal) {
+      // Fetch all students from the same SEC or SIT as the Principal
+      const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
+
+      if (!students || students.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: `No students found in ${loggedInStaffSecSit}`,
+        });
+      }
+
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          students,
+        },
+      });
+    } else if (isHODOrCoordinator) {
+      // Fetch all students from the same department as the HOD or Coordinator
+      const department = req.user.department;
+      const students = await Student.where({ department }).fetchAll();
+
+      if (!students || students.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: `No students found in the department`,
+        });
+      }
+
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          students,
+        },
+      });
+    } else {
+      return res.status(403).json({
+        status: 'fail',
+        message: 'Unauthorized access to view multiple students',
+      });
+    }
+  } catch (err) {
+    // Handle any errors that occur during the process
+    res.status(500).json({
+      status: 'fail',
+      message: 'Failed to fetch student details',
+      error: err.message,
+    });
+  }
+});
+
+
