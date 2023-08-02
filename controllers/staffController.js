@@ -139,10 +139,9 @@ exports.viewStaff = catchAsync(async (req, res) => {
     const staff = await Staff.where({ id: staffId }).fetch();
 
     if (!staff) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Staff not found',
-      });
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
     }
 
     // If the logged-in staff is the same as the staff being viewed or is higher staff, allow access
@@ -161,11 +160,9 @@ exports.viewStaff = catchAsync(async (req, res) => {
     }
   } catch (err) {
     // Handle any errors that occur during the process
-    res.status(500).json({
-      status: 'fail',
-      message: 'Failed to fetch staff details',
-      error: err.message,
-    });
+    const err1= new AppError("message", code);
+      err1.sendResponse(res);
+      return;
   }
 });
 
@@ -184,10 +181,9 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        return res.status(404).json({
-          status: 'fail',
-          message: 'No staffs found in the database',
-        });
+        const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
       }
 
       // Return the staff details
@@ -204,10 +200,9 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.where({ department:department }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        return res.status(404).json({
-          status: 'fail',
-          message: 'No staff found in the department',
-        });
+        const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
       }
 
       // Return the staff details
@@ -222,10 +217,9 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        return res.status(404).json({
-          status: 'fail',
-          message: `No staff found in ${loggedInStaffSecSit}`,
-        });
+        const err= new AppError("message", code);
+        err.sendResponse(res);
+        return;
       }
 
       // Return the staff details
@@ -240,13 +234,12 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       err.sendResponse(res);
       return;
     }
-  } catch (err) {
+  } 
+  catch (err) {
     // Handle any errors that occur during the process
-    res.status(500).json({
-      status: 'fail',
-      message: 'Failed to fetch staff details',
-      error: err.message,
-    });
+    const err1= new AppError("message", code);
+    err1.sendResponse(res);
+    return;
   }
 });
 
@@ -264,10 +257,9 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       const students = await Student.fetchAll();
 
       if (!students || students.length === 0) {
-        return res.status(404).json({
-          status: 'fail',
-          message: 'No students found in the database',
-        });
+        const err= new AppError("message", code);
+        err.sendResponse(res);
+        return;
       }
 
       // Return the student details
@@ -282,10 +274,9 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
 
       if (!students || students.length === 0) {
-        return res.status(404).json({
-          status: 'fail',
-          message: `No students found in ${loggedInStaffSecSit}`,
-        });
+        const err= new AppError("message", code);
+        err.sendResponse(res);
+        return;
       }
 
       // Return the student details
@@ -301,10 +292,9 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       const students = await Student.where({ department:department }).fetchAll();
 
       if (!students || students.length === 0) {
-        return res.status(404).json({
-          status: 'fail',
-          message: `No students found in the department`,
-        });
+        const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
       }
 
       // Return the student details
@@ -321,11 +311,9 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
     }
   } catch (err) {
     // Handle any errors that occur during the process
-    res.status(500).json({
-      status: 'fail',
-      message: 'Failed to fetch student details',
-      error: err.message,
-    });
+    const err1= new AppError("message", code);
+      err1.sendResponse(res);
+      return;
   }
 });
 

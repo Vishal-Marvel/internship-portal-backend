@@ -102,10 +102,9 @@ exports.viewStudent = catchAsync(async (req, res) => {
     const student = await Student.where({ id: studentId }).fetch();
 
     if (!student) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Student not found',
-      });
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
     }
 
     if (isStudent || isHOD || isPrincipal|| isInternshipCoordinator|| isMentor||isCeo) {
@@ -124,11 +123,9 @@ exports.viewStudent = catchAsync(async (req, res) => {
   } 
   catch (err) {
     // Handle any errors that occur during the process
-    res.status(500).json({
-      status: 'fail',
-      message: 'Failed to fetch student details',
-      error: err.message,
-    });
+    const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
   }
   
 });
