@@ -114,9 +114,14 @@ exports.viewStaff = catchAsync(async (req, res) => {
     const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
     const isHOD = loggedInStaffRole.includes('hod');
     const isPrincipal = loggedInStaffRole.includes('principal');
-
-    const staffId = req.params.id; // ID of the staff to view
-
+    
+    let staffId;
+    if(req.params.id){
+    staffId = req.params.id; // ID of the staff to view
+    }
+    else{
+      staffId = loggedInStaffId;
+    }
     // Fetch the staff from the database based on the staffId
     const staff = await Staff.where({ id: staffId }).fetch();
 
@@ -160,11 +165,31 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
     const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
     const isHOD = loggedInStaffRole.includes('hod');
     const isPrincipal = loggedInStaffRole.includes('principal');
+    const isCeo = loggedInStaffRole.includes('ceo');
 
-    if (isHOD) {
+    if (isCeo) {
+      // Fetch all staff from the database
+      const staffs = await Staff.fetchAll();
+
+      if (!staffs || staffs.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No staffs found in the database',
+        });
+      }
+
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staffs,
+        },
+      });
+    } 
+    else if (isHOD) {
       // Fetch all staffs in the same department as the HOD
       const department = req.user.department;
-      const staffs = await Staff.where({ department }).fetchAll();
+      const staffs = await Staff.where({ department:department }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
         return res.status(404).json({
@@ -262,7 +287,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
     } else if (isHODOrCoordinator) {
       // Fetch all students from the same department as the HOD or Coordinator
       const department = req.user.department;
-      const students = await Student.where({ department }).fetchAll();
+      const students = await Student.where({ department:department }).fetchAll();
 
       if (!students || students.length === 0) {
         return res.status(404).json({

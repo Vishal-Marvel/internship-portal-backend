@@ -82,14 +82,22 @@ exports.deleteStudent = catchAsync(async (req, res) => {
 
 exports.viewStudent = catchAsync(async (req, res) => {
   try {
-   // const loggedInUserId = req.user.id; 
+    const loggedInUserId = req.user.id; 
     const loggedInUserRole = req.user.roles;
     const isHOD = loggedInUserRole.includes('hod');
     const isPrincipal = loggedInUserRole.includes('principal');
     const isInternshipCoordinator = loggedInUserRole.includes('internshipcoordinator');
     const isStudent = loggedInUserRole.includes('student');
-    const studentId = req.params.id; // ID of the student to view
-
+    const isMentor = loggedInUserRole.includes('mentor');
+    const isCeo = loggedInUserRole.includes('ceo');
+    let studentId;
+    
+    if(isStudent){
+      studentId = loggedInUserId;
+    }
+    else{
+      studentId = req.params.id; // ID of the student to view
+    }
     // Fetch the student from the database based on the studentId
     const student = await Student.where({ id: studentId }).fetch();
 
@@ -100,8 +108,7 @@ exports.viewStudent = catchAsync(async (req, res) => {
       });
     }
 
-  
-    if (isStudent || isHOD || isPrincipal|| isInternshipCoordinator) {
+    if (isStudent || isHOD || isPrincipal|| isInternshipCoordinator|| isMentor||isCeo) {
       // Return the student details
       return res.status(200).json({
         status: 'success',
