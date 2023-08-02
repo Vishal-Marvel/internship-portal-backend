@@ -123,8 +123,8 @@ exports.viewStudent = catchAsync(async (req, res) => {
   } 
   catch (err) {
     // Handle any errors that occur during the process
-    const err= new AppError("message", code);
-      err.sendResponse(res);
+    const err1= new AppError("message", code);
+      err1.sendResponse(res);
       return;
   }
   

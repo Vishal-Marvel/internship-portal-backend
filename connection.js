@@ -176,6 +176,43 @@ const createStaffRoleTable = async () => {
     }
 };
 
+const createSkillsTable = async () => {
+    try {
+        await knex.schema.hasTable("skills").then(exists =>{
+            if (!exists){
+                return knex.schema.createTable('skills', table=>{
+                    table.string('id').primary();
+                    table.string('skill_name').unique();
+                    console.log('Skills table created successfully');
+                })
+            }
+        })
+
+
+    } catch (error) {
+        console.error('Error creating skills table:', error);
+    }
+};
+
+const createStudentSkillTable = async () => {
+    try {
+        await knex.schema.hasTable("student_skill").then(exists =>{
+            if (!exists){
+                return knex.schema.createTable('student_skill', table=>{
+                    table.string('student_id').references('students.id').onDelete('CASCADE');
+                    table.string('skill_id').references('skills.id').onDelete('CASCADE');
+                    table.primary(['student_id', 'skill_id']);
+                    console.log('Student Skills table created successfully');
+                })
+            }
+        })
+
+
+    } catch (error) {
+        console.error('Error creating studentskill table:', error);
+    }
+};
+
 knex.schema.hasTable("files").then(exists =>{
     if (!exists){
         return knex.schema.createTable('files', table=>{
@@ -191,12 +228,17 @@ createStaffsTable().then(
     r => createRolesTable().then(
         r => createStaffRoleTable().then(
             r=>createStudentsTable().then(
-                r=>createInternshipTable().then(
-                    r=>createApprovalTable().then(
-                        async e => {
-                            const startup = require('./utils/startup');
-                            await startup.performStartUp();
-                        }
+                r=>createSkillsTable().then(
+                    r=>createStudentSkillTable().then(
+                        r=>createInternshipTable().then(
+                            r=>createApprovalTable().then(
+                                async e => {
+                                    const startup = require('./utils/startup');
+                                    await startup.performStartUp();
+                                }
+                            
+                            )
+                        )
                     )
                 )
             )
