@@ -139,7 +139,7 @@ exports.viewStaff = catchAsync(async (req, res) => {
     const staff = await Staff.where({ id: staffId }).fetch();
 
     if (!staff) {
-      const err= new AppError("message", code);
+      const err= new AppError("Staff not found", 404);
       err.sendResponse(res);
       return;
     }
@@ -181,7 +181,7 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        const err= new AppError("message", code);
+        const err= new AppError("No staff found in the databasae",404 );
       err.sendResponse(res);
       return;
       }
@@ -217,7 +217,7 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        const err= new AppError("message", code);
+        const err= new AppError("message", );
         err.sendResponse(res);
         return;
       }
