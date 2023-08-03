@@ -7,51 +7,68 @@ const Skill = require('../models/skillModel');
 // Controller function to get all skills
 exports.getAllSkills = catchAsync(async (req, res) => {
   const skills = await Skill.fetchAll();
+  const skillNames = skills.map(skill => skill.get('skill_name'));
   res.json({
     status: 'success',
     data: {
-      skills
+      skillNames
     }
   });
 });
 
 // Controller function to add a new skill
 exports.addSkill = catchAsync(async (req, res) => {
-  const { skillName } = req.body;
+  try {
+    const { skillName } = req.body;
 
-  if (!skillName) {
-    const error =  new AppError('Skill name is required.', 400);
-    error.sendResponse(res);
-  }
-
-  const existingSkill = await Skill.where({ name: skillName }).fetch();
-  if (existingSkill) {
-    const err =  new AppError('Skill already exists.', 409);
-    err.sendResponse(res);
-  }
-
-  const newSkill = await Skill.forge({ name: skillName }).save();
-
-  res.json({
-    status: 'success',
-    data: {
-      skill: newSkill
+    if (!skillName) {
+      const error =  new AppError('Skill name is required.', 400);
+      error.sendResponse(res);
     }
-  });
+
+    const newSkill = await Skill.forge({ skill_name: skillName }).save();
+
+    res.json({
+      status: 'success',
+      data: {
+        skill: newSkill
+      }
+    });
+  }
+  catch (e){
+    if (e.code === 'ER_DUP_ENTRY'){
+      const err = new AppError("Skill Already Exists", 409);
+      err.sendResponse(res);
+    }
+    else{
+      const err = new AppError(e.message, 500);
+      err.sendResponse(res);
+    }
+  }
+
 });
 
 exports.deleteSkill = catchAsync(async (req, res) => {
-  const { skillId } = req.params;
+  try {
+    const {skillName} = req.body;
 
-  const skill = await Skill.where({ id: skillId }).fetch();
-  if (!skill) {
-    throw new AppError('Skill not found.', 404);
+    const skill = await Skill.where({skill_name: skillName}).fetch();
+
+    await skill.destroy();
+
+    res.json({
+      status: 'success',
+      message: 'Skill deleted successfully',
+    });
   }
-
-  await skill.destroy();
-
-  res.json({
-    status: 'success',
-    message: 'Skill deleted successfully',
-  });
+  catch (e){
+    if (e.message === "EmptyResponse"){
+      const err = new AppError("Skill Doesn't Exists", 409);
+      err.sendResponse(res);
+    }
+    else{
+      const err = new AppError(e.message, 500);
+      err.sendResponse(res);
+    }
+  }
 });

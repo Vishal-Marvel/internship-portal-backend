@@ -1,6 +1,7 @@
 const Student = require('../models/studentModel');
 const Staff = require('../models/staffModel')
 const Role = require('../models/roleModel')
+const Skill = require('../models/skillModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require("jsonwebtoken");
@@ -38,7 +39,8 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             email,
             phone_no,
             password,
-            mentor_email
+            mentor_email,
+            skills
         } = req.body;
 
         if (
@@ -72,10 +74,14 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             staff_id
         })
         await student.save();
+        const skillObjs = await Promise.all(skills.map(async skill => await Skill.where({ skill_name: skill }).fetch()));
+        const skillIds = skillObjs.map(skill => skill.get('id'));
+        await student.skills().attach(skillIds);
         res.status(201).json({
             status: 'success',
             data: {
-                student
+                student,
+                skills
             }
         });
     } catch (err) {
