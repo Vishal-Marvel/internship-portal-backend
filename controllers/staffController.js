@@ -154,13 +154,13 @@ exports.viewStaff = catchAsync(async (req, res) => {
         },
       });
     } else {
-      const err= new AppError("message", code);
+      const err= new AppError("Unauthorised access to staff details", 403);
       err.sendResponse(res);
       return;
     }
   } catch (err) {
     // Handle any errors that occur during the process
-    const err1= new AppError("message", code);
+    const err1= new AppError("Failed to fetch staff details", 500);
       err1.sendResponse(res);
       return;
   }
@@ -181,7 +181,7 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        const err= new AppError("No staff found in the databasae",404 );
+        const err= new AppError("No Staff in the database", 404);
       err.sendResponse(res);
       return;
       }
@@ -200,7 +200,7 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.where({ department:department }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        const err= new AppError("message", code);
+        const err= new AppError("No Staff in the department", 404);
       err.sendResponse(res);
       return;
       }
@@ -217,7 +217,7 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        const err= new AppError("message", );
+        const err= new AppError("No staff found in ${loggedInStaffSecSit ", 404);
         err.sendResponse(res);
         return;
       }
@@ -230,14 +230,14 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
         },
       });
     } else {
-      const err= new AppError("message", code);
+      const err= new AppError("Unauthorised access to view multiple staffs", 403);
       err.sendResponse(res);
       return;
     }
   } 
   catch (err) {
     // Handle any errors that occur during the process
-    const err1= new AppError("message", code);
+    const err1= new AppError("Failed to fetch Staff details", 500);
     err1.sendResponse(res);
     return;
   }
@@ -257,7 +257,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       const students = await Student.fetchAll();
 
       if (!students || students.length === 0) {
-        const err= new AppError("message", code);
+        const err= new AppError("No Student found in the database", 404);
         err.sendResponse(res);
         return;
       }
@@ -274,7 +274,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
 
       if (!students || students.length === 0) {
-        const err= new AppError("message", code);
+        const err= new AppError("No Student found in ${loggedInStaffSecSit}", 404);
         err.sendResponse(res);
         return;
       }
@@ -292,7 +292,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       const students = await Student.where({ department:department }).fetchAll();
 
       if (!students || students.length === 0) {
-        const err= new AppError("message", code);
+        const err= new AppError("No Student found in the department", 404);
       err.sendResponse(res);
       return;
       }
@@ -305,13 +305,13 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
         },
       });
     } else {
-      const err= new AppError("message", code);
+      const err= new AppError("Unauthorised access to view multiple students", 403);
       err.sendResponse(res);
       return;
     }
   } catch (err) {
     // Handle any errors that occur during the process
-    const err1= new AppError("message", code);
+    const err1= new AppError("Failed to fetch students details", 500);
       err1.sendResponse(res);
       return;
   }
