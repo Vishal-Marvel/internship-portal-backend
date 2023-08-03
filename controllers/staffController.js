@@ -2,6 +2,25 @@ const Student = require('../models/studentModel');
 const Staff = require('../models/staffModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const Role = require("../models/roleModel");
+
+
+const validateRoleAssignment = (role, data) => {
+    const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
+    const rolesWithSecSit = ['mentor','internship_coordinator','hod','principal' ];
+
+    if (rolesWithDepartment.includes(role)) {
+        if (!data.department) {
+            throw new AppError(`For Staff ${data.name} with role ${role}, Department is required for this role`, 400);
+        }
+    }
+
+    if (rolesWithSecSit.includes(role)) {
+        if (!data.sec_sit) {
+            throw new AppError(`For Staff ${data.name} with role ${role}, SEC / SIT is required for this role`, 400);
+        }
+    }
+};
 
 exports.viewMenteeStudents = catchAsync(async (req, res) => {
     try {
@@ -36,6 +55,60 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
     }
 });
 
+exports.updateRole = catchAsync(async (req, res) => {
+    try {
+        const roles = req.body.roles;
+        const staff = await Staff.where({ id: req.body.id }).fetch({ withRelated: ['roles'] });
+
+        const staffData = staff.toJSON();
+        // Fetch the existing roles of the staff
+        const existingRoles = staff.related('roles').pluck('role_name');
+        const rolesToAdd = roles.filter(role => !existingRoles.includes(role));
+        const rolesToRemove = existingRoles.filter(role => !roles.includes(role));
+
+        const rolesToRemoveObj = await Promise.all(rolesToRemove.map(async role => await Role.where({ role_name: role }).fetch()));
+        const rolesToRemoveIds = rolesToRemoveObj.map(role => role.get('id'));
+        await staff.roles().detach(rolesToRemoveIds);
+
+        const rolesToAddObj = await Promise.all(rolesToAdd.map(async role => await Role.where({ role_name: role }).fetch()));
+        const rolesToAddIds = rolesToAddObj.map(role => role.get('id'));
+        const rolesToAddNames = rolesToRemoveObj.map(role => role.get('role_name'));
+        // Assign new roles only if staff provides the required information
+        rolesToAddNames.forEach(role => {
+            validateRoleAssignment(role, staffData);
+        });
+        // Attach the new role to the staff
+        await staff.roles().attach(rolesToAddIds);
+
+        res.status(200).json({
+            status: 'success',
+            message: `${roles.join(', ')} Assigned to ${staffData.name}`,
+        });
+    } catch (err) {
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+    }
+});
+
+exports.viewRoles = catchAsync(async (req, res) => {
+    const staff = await Staff.where({ id: req.body.id }).fetch({ withRelated: ['roles'] });
+
+    // Fetch the existing roles of the staff
+    const existingRoles = staff.related('roles').pluck('role_name');
+    console.log(staff)
+    if (existingRoles.length ===0){
+        return res.status(200).json({
+            status: 'success' ,
+            message: 'No Roles Found'
+        })
+    }
+    else {
+        return res.status(200).json({
+            status: 'success' ,
+            roles: existingRoles
+        })
+    }
+});
 
 exports.updateStaff = catchAsync(async (req, res) => {
     try {

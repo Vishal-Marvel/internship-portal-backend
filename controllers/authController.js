@@ -417,35 +417,6 @@ exports.removeRole = catchAsync(async (req, res)=>{
     }
 })
 
-exports.assignRoles = catchAsync(async (req, res) => {
-    try {
-        const roles = req.body.roles;
-        const staff = await Staff.where({ id: req.body.id }).fetch();
-        const staffData = staff.toJSON();
-
-        const roleObjs = await Promise.all(roles.map(async role => await Role.where({ role_name: role }).fetch()));
-        const rolename = roleObjs.map(role => role.get('role_name'));
-        // Assign roles only if staff provides the required information
-        rolename.forEach((role) => {
-            validateRoleAssignment(role, staffData);
-        });
-
-        // Role assignment logic here
-
-        const roleIds = roleObjs.map(role => role.get('id')); // Extract the role IDs
-        await staff.roles().attach(roleIds);
-
-        res.status(200).json({
-            status: 'success',
-            message: `${roles.join(', ')} Assigned to ${staffData.name}`,
-        });
-    } catch (err) {
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
-    }
-});
-
-
 exports.restrictTo = (...roles) => {
     return (req, res, next) => {
         const userRoles = req.user.roles;
