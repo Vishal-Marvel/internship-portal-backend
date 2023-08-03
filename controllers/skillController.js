@@ -7,10 +7,11 @@ const Skill = require('../models/skillModel');
 // Controller function to get all skills
 exports.getAllSkills = catchAsync(async (req, res) => {
   const skills = await Skill.fetchAll();
+  const skillNames = skills.map(skill => skill.get('skill_name'));
   res.json({
     status: 'success',
     data: {
-      skills
+      skillNames
     }
   });
 });
@@ -49,9 +50,9 @@ exports.addSkill = catchAsync(async (req, res) => {
 
 exports.deleteSkill = catchAsync(async (req, res) => {
   try {
-    const {skillId} = req.params;
+    const {skillName} = req.body;
 
-    const skill = await Skill.where({id: skillId}).fetch();
+    const skill = await Skill.where({skill_name: skillName}).fetch();
 
     await skill.destroy();
 

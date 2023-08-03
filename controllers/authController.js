@@ -80,7 +80,8 @@ exports.studentSignUp = catchAsync(async (req, res) => {
         res.status(201).json({
             status: 'success',
             data: {
-                student
+                student,
+                skills
             }
         });
     } catch (err) {
