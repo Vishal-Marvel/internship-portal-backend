@@ -61,6 +61,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             student_id // This is for internships registering by Staffs
         } = req.body;
         const approval_status = "Not Approved";
+        const internship_status = "Not Completed";
 
         if(!company_name||
            !company_address||
@@ -115,7 +116,8 @@ exports.registerInternship = catchAsync(async (req, res) => {
             location,
             domain,
             student_id,
-            approval_status
+            approval_status,
+            internship_status
         });
         const student = await Student.where({id: student_id}).fetch();
         const { buffer, mimetype, originalname } = req.file;
@@ -139,9 +141,9 @@ exports.registerInternship = catchAsync(async (req, res) => {
 
         const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
-        await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
-            , "Internship Registered by:\n " + student.get('name') + "\n\n"
-            + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+        // await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
+        //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
+        //     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
         // Send a success response
 
@@ -183,7 +185,8 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
         await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
             attendance: attendanceId,
-            feedback: feedbackId
+            feedback: feedbackId,
+            internship_status: "Completed"
         } );
 
         res.status(201).json({
@@ -212,7 +215,7 @@ exports.canUpdate = catchAsync(async (req,res)=>{
         const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const endingDate = internship.get('ending_date');
         endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate > new Date()){
+        if (endingDate > new Date() && req.user.roles.includes('student')){
             res.status(200).json({
                 status: 'success',
                 message: 'Internship details can be updated'
@@ -237,7 +240,7 @@ exports.updateInternship = catchAsync(async (req,res)=>{
         let internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const endingDate = internship.get('ending_date');
         endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate < new Date()){
+        if (endingDate < new Date() && req.user.roles.includes('student')){
             res.status(400).json({
                 status: 'fail',
                 message: 'Internship details cant be updated'

@@ -50,7 +50,7 @@ const createStudentsTable = async () => {
                     table.integer('total_days_internship');
                     table.boolean('placement_status');
                     table.string('placed_company');
-                    // table.string('skills');
+                    table.string('profile_photo');
                     table.string('staff_id'); // Add staff_id column for the foreign key
                     table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
                     console.log('Students table created successfully');
@@ -90,6 +90,7 @@ const createInternshipTable = async () => {
                     table.string('feedback');
                     table.string('offer_letter');
                     table.string('approval_status');
+                    table.string('internship_status');
                     table.string('student_id').references('students.id').onDelete('CASCADE');
                     console.log('Internship table created successfully');
                 });

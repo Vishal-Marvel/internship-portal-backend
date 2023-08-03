@@ -19,7 +19,7 @@ router.get('/mentee-students',authController.restrictTo('mentor'), staffControll
 router.get('/:id/mentee-students', staffController.viewMenteeStudents);
 router.route('/:id')
     .put(staffController.updateStaff)
-    .delete(staffController.deleteStaff)
+    .delete(authController.restrictTo('hod', 'admin', 'principal'), staffController.deleteStaff)
 router.get('/viewStaff/:id',authController.restrictTo('hod','principal','ceo'),staffController.viewStaff);
 router.get('/viewStaff',staffController.viewStaff);//for same logged in staff
 router.get('/viewMultipleStaff',authController.restrictTo('hod','principal','ceo'), staffController.viewMultipleStaff);

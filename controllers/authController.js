@@ -6,7 +6,34 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require("jsonwebtoken");
 const ExcelJS = require('exceljs');
+const File = require("../models/fileModel");
 
+
+const savePhoto = async (buffer, mimetype, fileName, originalname) => {
+    try {
+        console.log(mimetype)
+        if (!mimetype.startsWith('image')) {
+            throw new AppError('File type is invalid', 400);
+        }
+
+        const file = new File({
+            file_name: fileName,
+            file: buffer
+        });
+
+        await file.save();
+
+        return file.id;
+    }
+    catch (e){
+        if (e.code === 'ER_DATA_TOO_LONG'){
+            throw new AppError(`File ${originalname} is too large`,  400);
+        }
+        else{
+            throw new AppError(e.message,  500);
+        }
+    }
+};
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -53,14 +80,18 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             !email ||
             !phone_no ||
             !password ||
-            !mentor_email
+            !mentor_email ||
+            !skills
           ) {
             throw new AppError("All fields are required", 400);
           }
 
         const staff = await Staff.where({email:mentor_email}).fetch();
         const staff_id = staff.id;
+        const { buffer, mimetype, originalname } = req.file;
+        const fileName = `${student_id}_profile_photo`; // Append the unique suffix to the file name
 
+        const profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
         const student = new Student({
             name,
             sec_sit,
@@ -71,12 +102,29 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             email,
             phone_no,
             password,
-            staff_id
+            staff_id,
+            profile_photo
         })
+        const allSkills = await Skill.fetchAll();
+        const skillNames = allSkills.map(skill => skill.get('skill_name'));
+        const errors = [];
+        const skillArr = skills.split(',').map(skill => skill.trim());
+
+        skillArr.forEach((skill) => {
+            if (!skillNames.includes(skill)){
+                errors.push(`${skill} Not Found`);
+            }
+        })
+        if (errors.length>0){
+            const err = new AppError(errors, 404);
+            err.sendResponse(res);
+            return;
+        }
         await student.save();
-        const skillObjs = await Promise.all(skills.map(async skill => await Skill.where({ skill_name: skill }).fetch()));
+        const skillObjs = await Promise.all(skillArr.map(async skill => await Skill.where({ skill_name: skill }).fetch()));
         const skillIds = skillObjs.map(skill => skill.get('id'));
         await student.skills().attach(skillIds);
+
         res.status(201).json({
             status: 'success',
             data: {

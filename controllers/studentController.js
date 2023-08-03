@@ -137,14 +137,12 @@ exports.viewStudent = catchAsync(async (req, res) => {
     } else {
       const err= new AppError("Unauthorised access", 403);
       err.sendResponse(res);
-      return;
     }
   } 
   catch (err) {
     // Handle any errors that occur during the process
     const err1= new AppError("Failed to fetch student details", 500);
       err1.sendResponse(res);
-      return;
   }
   
 });
