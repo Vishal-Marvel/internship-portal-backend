@@ -21,7 +21,8 @@ exports.updateStudent = catchAsync(async (req, res) => {
           phone_no,
           total_days_internship,
           placement_status,
-          placed_company
+          placed_company,
+          skills
       } = req.body;
       const updatedData = {
         name, sec_sit, year_of_studying, phone_no,total_days_internship,
@@ -35,29 +36,46 @@ exports.updateStudent = catchAsync(async (req, res) => {
           runValidators: true, // Run the validation on the updated fields
           tableName: 'students' // Specify the table name
         });
-    
+
         if (!student) {
           // If the student with the provided ID is not found, return an error response
-          return res.status(404).json({
-            status: 'fail',
-            message: 'Student not found',
-          });
+          const err= new AppError("Student not found", 404);
+          err.sendResponse(res);
+          return;
         }
-    
-        // Send a success response
+
+        // Get the existing skills for the student
+        const existingSkills = await student.related('skills').pluck('id');
+
+        // Find skill_ids to be deleted and skill_ids to be added
+        const skillsToDelete = existingSkills.filter((skill_id) => !skills.includes(skill_id));
+        const skillsToAdd = skills.filter((skill_id) => !existingSkills.includes(skill_id));
+
+        // Delete the skills that need to be removed
+        await Promise.all(skillsToDelete.map((skill_id) => {
+          return student.skills().detach(skill_id);
+        }));
+
+        // Add the new skills for the student
+        await Promise.all(skillsToAdd.map((skill_id) => {
+          return student.skills().attach(skill_id);
+        }));
+
+    // Fetch the updated student with related skills
+        const updatedStudentWithSkills = await Student.forge({ id: studentId }).fetch({ withRelated: 'skills' });
+
         res.status(200).json({
           status: 'success',
-          message: 'Student details updated successfully',
+          message: 'Student details and skills updated successfully',
           data: {
-            student,
+            student: updatedStudentWithSkills.toJSON(),
           },
         });
-    }
-    catch (err) {
-        // Handle any errors that occur during the process
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
-    }
+  } catch (error) {
+    const err= new AppError("Error updating student details and skills", 500);
+      err.sendResponse(res);
+      return;
+  }
 });
 
 exports.deleteStudent = catchAsync(async (req, res) => {
@@ -136,73 +154,3 @@ exports.viewStudentInternship = catchAsync(async (req, res) => {
 });
 
 
-// Controller function to delete a particular skill for a specific student
-exports.deleteStudentSkill = catchAsync(async (req, res) => {
-  const { studentId } = req.params;
-  const { skillName } = req.body;
-
-  // Check if the student exists
-  const student = await Student.where({ id: studentId }).fetch({ withRelated: 'skills' });
-  if (!student) {
-    throw new AppError('Student not found.', 404);
-  }
-
-  // Find the skill based on the skill name
-  const skill = await Skill.where({ name: skillName }).fetch();
-  if (!skill) {
-    throw new AppError('Skill not found.', 404);
-  }
-
-  // Check if the skill exists in the student's skills
-  const studentSkill = student.related('skills').find((s) => s.id === skill.id);
-  if (!studentSkill) {
-    throw new AppError('Skill not found for the student.', 404);
-  }
-
-  // Delete the skill for the student
-  await student.skills().detach(skill.id);
-
-  res.json({
-    status: 'success',
-    message: 'Skill deleted successfully for the student',
-  });
-});
-
-// Controller function to update a skill for a specific student
-exports.updateStudentSkill = catchAsync(async (req, res) => {
-  const { studentId } = req.params;
-  const { skillName, newSkillName } = req.body;
-
-  // Check if the student exists
-  const student = await Student.where({ id: studentId }).fetch({ withRelated: 'skills' });
-  if (!student) {
-    throw new AppError('Student not found.', 404);
-  }
-
-  // Find the current skill based on the skill name
-  const currentSkill = await Skill.where({ name: skillName }).fetch();
-  if (!currentSkill) {
-    throw new AppError('Skill not found.', 404);
-  }
-
-  // Find the new skill based on the new skill name
-  const newSkill = await Skill.where({ name: newSkillName }).fetch();
-  if (!newSkill) {
-    throw new AppError('New skill not found.', 404);
-  }
-
-  // Check if the current skill exists in the student's skills
-  const studentSkill = student.related('skills').find((s) => s.id === currentSkill.id);
-  if (!studentSkill) {
-    throw new AppError('Skill not found for the student.', 404);
-  }
-
-  // Update the skill for the student
-  await student.skills().detach(currentSkill.id);
-  await student.skills().attach(newSkill.id);
-
-  res.json({
-    status: 'success',
-    message: 'Skill updated successfully for the student',
-  });
-});

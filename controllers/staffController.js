@@ -55,6 +55,17 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
     }
 });
 
+// Controller function to get all roles
+exports.getAllRoles = catchAsync(async (req, res) => {
+  const roles = await Role.fetchAll();
+  res.json({
+    status: 'success',
+    data: {
+      roles
+    }
+  });
+});
+
 exports.updateRole = catchAsync(async (req, res) => {
     try {
         const roles = req.body.roles;
