@@ -12,8 +12,8 @@ const Skill = bookshelf.model('Skill', {
             this.set('id', uuid.toString());
     
         },
-        users() {
-            return this.belongsToMany(Student, 'student_skill', 'student_id', 'skill_id');
+        students() {
+            return this.belongsToMany(Student, 'student_skill', 'skill_id', 'student_id');
         },
 
   });

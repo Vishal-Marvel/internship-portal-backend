@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const Staff = require('./staffModel')
 
 const bcrypt = require('bcrypt');
+const Skill = require("./skillModel");
 
 const Student = bookshelf.model('Student', {
   tableName: 'students',
@@ -34,6 +35,9 @@ const Student = bookshelf.model('Student', {
   verifyPassword: async function(candidatePassword) {
     const password = this.get('password');
     return await bcrypt.compare(candidatePassword, password);
+  },
+  skills() {
+    return this.belongsToMany(Skill, 'student_skill', 'student_id', 'skill_id');
   },
 
 

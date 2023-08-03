@@ -24,7 +24,8 @@ router.get('/viewStaff',staffController.viewStaff);//for same logged in staff
 router.get('/viewMultipleStaff',staffController.viewMultipleStaff);
 router.get('/viewMultipleStudent',staffController.viewMultipleStudent);
 router.use(authController.restrictTo("hod", "admin")); // router.use(authController.restrictTo(staffUpdateRoles));
-router.post('/assignRole', authController.assignRoles);
+router.post('/updateRole', staffController.updateRole);
+router.get('/viewRoles', staffController.viewRoles);
 router.post('/updateMentees', staffController.migrateMentees);
 router.post('/addStaffs', upload.single('file'),  authController.multipleStaffSignup)
 module.exports = router;
