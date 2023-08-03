@@ -4,6 +4,25 @@ const Role = require('../models/roleModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require("jsonwebtoken");
+const ExcelJS = require('exceljs');
+
+
+const validateRoleAssignment = (role, data) => {
+    const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
+    const rolesWithSecSit = ['mentor','internship_coordinator','hod','principal' ];
+
+    if (rolesWithDepartment.includes(role)) {
+        if (!data.department) {
+            throw new AppError(`For Staff ${data.name} with role ${role}, Department is required for this role`, 400);
+        }
+    }
+
+    if (rolesWithSecSit.includes(role)) {
+        if (!data.sec_sit) {
+            throw new AppError(`For Staff ${data.name} with role ${role}, SEC / SIT is required for this role`, 400);
+        }
+    }
+};
 
 // Signup function
 exports.studentSignUp = catchAsync(async (req, res) => {
@@ -118,6 +137,94 @@ exports.staffSignup = catchAsync(async (req, res) => {
             error.sendResponse(res);
         }
         else {
+            const error = new AppError(err.message, 400);
+            error.sendResponse(res);
+        }
+    }
+})
+
+exports.multipleStaffSignup = catchAsync(async (req, res) =>{
+    try {
+        if (!req.file) {
+            const error =  new AppError('No Excel file uploaded', 400);
+            error.sendResponse(res);
+        }
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+        const worksheet = workbook.getWorksheet(1);
+        const staffList = [];
+        const errors = [];
+        const staffRole = new Map();
+        const roleObjsMap = new Map(); // To store fetched role objects using role_name as key
+
+        worksheet.eachRow(async (row, rowNumber) => {
+            try {
+                if (rowNumber > 1) {
+                    const [_, name, department, email, sec_sit, phone_no, password, roles] = row.values;
+                    const staff = new Staff({
+                        name,
+                        department,
+                        email,
+                        sec_sit,
+                        phone_no,
+                        password,
+                    });
+                    if (
+                        !name ||
+                        !email ||
+                        !phone_no ||
+                        !password
+                    ) {
+                        errors.push(`Row ${rowNumber}: All fields are required`);
+                    }
+                    const rolesArr = roles ? roles.split(',').map((role) => role.trim()) : [];
+                    rolesArr.forEach((role) => {
+                            validateRoleAssignment(role, staff.toJSON())
+                        }
+                    )
+                    staffList.push(staff);
+                    staffRole.set(staff, rolesArr);
+                    rolesArr.forEach((role) => {
+                        if (!roleObjsMap.has(role)) {
+                            roleObjsMap.set(role, null);
+                        }
+                    });
+                }
+            }
+            catch (err){
+                errors.push(`Row ${rowNumber}: ${err.message}`);
+            }
+        });
+        if (errors.length > 0) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Some rows have validation issues',
+                errors: errors,
+            });
+        }
+        await Staff.collection(staffList).invokeThen('save');
+        const rolesArr = Array.from(roleObjsMap.keys());
+        const roleObjs = await Promise.all(rolesArr.map(async (role) => await Role.where({ role_name: role }).fetch()));
+        roleObjs.forEach((role) => {
+            roleObjsMap.set(role.get('role_name'), role);
+        });
+        for (const [staff,role] of staffRole) {
+            const roleIds = role.map((role) => roleObjsMap.get(role).get('id'));
+            await staff.roles().attach(roleIds);
+        }
+        res.status(201).json({
+            status: 'success',
+            data: {
+                staffList,
+            },
+        });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            const error = new AppError('Staff Already Exists', 400);
+            error.sendResponse(res);
+        }
+        else {
+            // throw err;
             const error = new AppError(err.message, 400);
             error.sendResponse(res);
         }
@@ -309,23 +416,6 @@ exports.removeRole = catchAsync(async (req, res)=>{
         }
     }
 })
-
-const validateRoleAssignment = (role, data) => {
-    const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
-    const rolesWithSecSit = ['mentor','internship_coordinator','hod','principal' ];
-
-    if (rolesWithDepartment.includes(role)) {
-        if (!data.department) {
-            throw new Error('Department is required for this role');
-        }
-    }
-
-    if (rolesWithSecSit.includes(role)) {
-        if (!data.sec_sit) {
-            throw new Error('Sec_sit is required for this role');
-        }
-    }
-};
 
 exports.assignRoles = catchAsync(async (req, res) => {
     try {
