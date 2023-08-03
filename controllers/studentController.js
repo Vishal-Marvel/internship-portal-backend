@@ -45,7 +45,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
         }
 
         // Get the existing skills for the student
-        const existingSkills = await student.related('skills').pluck('id');
+        const existingSkills = await student.related('skills').pluck('skill_name');
 
         // Find skill_ids to be deleted and skill_ids to be added
         const skillsToDelete = existingSkills.filter((skill_id) => !skills.includes(skill_id));
@@ -118,7 +118,7 @@ exports.viewStudent = catchAsync(async (req, res) => {
       studentId = req.params.id; // ID of the student to view
     }
     // Fetch the student from the database based on the studentId
-    const student = await Student.where({ id: studentId }).fetch();
+    const student = await Student.where({ id: studentId }).fetch({ withRelated: 'skills' });
 
     if (!student) {
       const err= new AppError("No Student found in the database", 404);

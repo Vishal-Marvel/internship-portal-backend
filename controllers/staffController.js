@@ -37,7 +37,7 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
                 message: 'Unauthorized access',
             });
         }
-        const students = await Student.where({ staff_id: staff_id }).fetchAll();
+        const students = await Student.where({ staff_id: staff_id }).fetchAll({ withRelated: 'skills' });
         const studentNames = students.map(student => student.get('name'));
         const studentIds = students.map(student => student.get('id'));
         const studentStudentIds = students.map(student => student.get('student_id'));
@@ -58,10 +58,11 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
 // Controller function to get all roles
 exports.getAllRoles = catchAsync(async (req, res) => {
   const roles = await Role.fetchAll();
+  const role_names = roles.map(role => role.get('role_name'));
   res.json({
     status: 'success',
     data: {
-      roles
+      role_names
     }
   });
 });
@@ -338,7 +339,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
 
     if (isCEOOrTapCell) {
       // Fetch all students from the database
-      const students = await Student.fetchAll();
+      const students = await Student.fetchAll({ withRelated: 'skills' });
 
       if (!students || students.length === 0) {
         const err= new AppError("No Student found in the database", 404);
@@ -355,7 +356,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       });
     } else if (isPrincipal) {
       // Fetch all students from the same SEC or SIT as the Principal
-      const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
+      const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll({ withRelated: 'skills' });
 
       if (!students || students.length === 0) {
         const err= new AppError("No Student found in ${loggedInStaffSecSit}", 404);
@@ -373,7 +374,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
     } else if (isHODOrCoordinator) {
       // Fetch all students from the same department as the HOD or Coordinator
       const department = req.user.department;
-      const students = await Student.where({ department:department }).fetchAll();
+      const students = await Student.where({ department:department }).fetchAll({ withRelated: 'skills' });
 
       if (!students || students.length === 0) {
         const err= new AppError("No Student found in the department", 404);
