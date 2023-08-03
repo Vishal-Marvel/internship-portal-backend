@@ -103,7 +103,7 @@ exports.viewStudent = catchAsync(async (req, res) => {
     const student = await Student.where({ id: studentId }).fetch();
 
     if (!student) {
-      const err= new AppError("message", code);
+      const err= new AppError("No Student found in the database", 404);
       err.sendResponse(res);
       return;
     }
@@ -117,14 +117,14 @@ exports.viewStudent = catchAsync(async (req, res) => {
         },
       });
     } else {
-      const err= new AppError("message", code);
+      const err= new AppError("Unauthorised access", 403);
       err.sendResponse(res);
       return;
     }
   } 
   catch (err) {
     // Handle any errors that occur during the process
-    const err1= new AppError("message", code);
+    const err1= new AppError("Failed to fetch student details", 500);
       err1.sendResponse(res);
       return;
   }
