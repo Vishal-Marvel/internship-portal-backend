@@ -81,20 +81,51 @@ exports.deleteStudent = catchAsync(async (req, res) => {
 });
 
 exports.viewStudent = catchAsync(async (req, res) => {
-
   try {
-    // Fetch all students from the database using Bookshelf model
-    const students = await Student.fetchAll();
+    const loggedInUserId = req.user.id; 
+    const loggedInUserRole = req.user.roles;
+    const isHOD = loggedInUserRole.includes('hod');
+    const isPrincipal = loggedInUserRole.includes('principal');
+    const isInternshipCoordinator = loggedInUserRole.includes('internshipcoordinator');
+    const isStudent = loggedInUserRole.includes('student');
+    const isMentor = loggedInUserRole.includes('mentor');
+    const isCeo = loggedInUserRole.includes('ceo');
+    let studentId;
+    
+    if(isStudent){
+      studentId = loggedInUserId;
+    }
+    else{
+      studentId = req.params.id; // ID of the student to view
+    }
+    // Fetch the student from the database based on the studentId
+    const student = await Student.where({ id: studentId }).fetch();
 
-    // Render the 'student' view and pass the students data as a variable
-    res.render('student', { students });
-  } catch (err) {
+    if (!student) {
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+    }
+
+    if (isStudent || isHOD || isPrincipal|| isInternshipCoordinator|| isMentor||isCeo) {
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          student,
+        },
+      });
+    } else {
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+    }
+  } 
+  catch (err) {
     // Handle any errors that occur during the process
-    res.status(500).json({
-      status: 'fail',
-      message: 'Failed to fetch student details',
-      error: err.message,
-    });
+    const err1= new AppError("message", code);
+      err1.sendResponse(res);
+      return;
   }
   
 });

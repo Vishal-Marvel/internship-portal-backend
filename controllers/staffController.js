@@ -5,7 +5,20 @@ const AppError = require('../utils/appError');
 
 exports.viewMenteeStudents = catchAsync(async (req, res) => {
     try {
-        const students = await Student.where({ staff_id: req.params.id }).fetchAll();
+        let staff_id;
+        if (req.params.id){
+            staff_id = req.params.id;
+        }
+        else if (req.user.roles.includes('mentor')){
+            staff_id = req.params.id;
+        }
+        else{
+            return res.status(403).json({
+                status: 'fail',
+                message: 'Unauthorized access',
+            });
+        }
+        const students = await Student.where({ staff_id: staff_id }).fetchAll();
         const studentNames = students.map(student => student.get('name'));
         const studentIds = students.map(student => student.get('id'));
         const studentStudentIds = students.map(student => student.get('student_id'));
@@ -23,8 +36,6 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
     }
 });
 
-exports.viewStaff = catchAsync(async (req, res) => {
-});
 
 exports.updateStaff = catchAsync(async (req, res) => {
     try {
@@ -109,3 +120,201 @@ exports.migrateMentees = catchAsync(async (req, res) => {
         await err.sendResponse(res);
     }
 })
+
+exports.viewStaff = catchAsync(async (req, res) => {
+  try {
+    const loggedInStaffId = req.user.id; // ID of the logged-in staff member
+    const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+    const isHOD = loggedInStaffRole.includes('hod');
+    const isPrincipal = loggedInStaffRole.includes('principal');
+    
+    let staffId;
+    if(req.params.id){
+    staffId = req.params.id; // ID of the staff to view
+    }
+    else{
+      staffId = loggedInStaffId;
+    }
+    // Fetch the staff from the database based on the staffId
+    const staff = await Staff.where({ id: staffId }).fetch();
+
+    if (!staff) {
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+    }
+
+    // If the logged-in staff is the same as the staff being viewed or is higher staff, allow access
+    if (staffId === loggedInStaffId || isHOD || isPrincipal) {
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staff,
+        },
+      });
+    } else {
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+    }
+  } catch (err) {
+    // Handle any errors that occur during the process
+    const err1= new AppError("message", code);
+      err1.sendResponse(res);
+      return;
+  }
+});
+
+
+exports.viewMultipleStaff = catchAsync(async (req, res) => {
+  
+  try {
+    const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+    const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
+    const isHOD = loggedInStaffRole.includes('hod');
+    const isPrincipal = loggedInStaffRole.includes('principal');
+    const isCeo = loggedInStaffRole.includes('ceo');
+
+    if (isCeo) {
+      // Fetch all staff from the database
+      const staffs = await Staff.fetchAll();
+
+      if (!staffs || staffs.length === 0) {
+        const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+      }
+
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staffs,
+        },
+      });
+    } 
+    else if (isHOD) {
+      // Fetch all staffs in the same department as the HOD
+      const department = req.user.department;
+      const staffs = await Staff.where({ department:department }).fetchAll();
+
+      if (!staffs || staffs.length === 0) {
+        const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+      }
+
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staffs,
+        },
+      });
+    } else if (isPrincipal) {
+      // Fetch all staffs in the same SEC or SIT as the Principal
+      const staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
+
+      if (!staffs || staffs.length === 0) {
+        const err= new AppError("message", code);
+        err.sendResponse(res);
+        return;
+      }
+
+      // Return the staff details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          staffs,
+        },
+      });
+    } else {
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+    }
+  } 
+  catch (err) {
+    // Handle any errors that occur during the process
+    const err1= new AppError("message", code);
+    err1.sendResponse(res);
+    return;
+  }
+});
+
+exports.viewMultipleStudent = catchAsync(async (req, res) => {
+  
+  try {
+    const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+    const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
+    const isCEOOrTapCell = loggedInStaffRole.includes('ceo') || loggedInStaffRole.includes( 'tapcell');
+    const isPrincipal = loggedInStaffRole.includes('principal');
+    const isHODOrCoordinator = loggedInStaffRole.includes('hod') || loggedInStaffRole.includes('internshipcoordinator');
+
+    if (isCEOOrTapCell) {
+      // Fetch all students from the database
+      const students = await Student.fetchAll();
+
+      if (!students || students.length === 0) {
+        const err= new AppError("message", code);
+        err.sendResponse(res);
+        return;
+      }
+
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          students,
+        },
+      });
+    } else if (isPrincipal) {
+      // Fetch all students from the same SEC or SIT as the Principal
+      const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
+
+      if (!students || students.length === 0) {
+        const err= new AppError("message", code);
+        err.sendResponse(res);
+        return;
+      }
+
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          students,
+        },
+      });
+    } else if (isHODOrCoordinator) {
+      // Fetch all students from the same department as the HOD or Coordinator
+      const department = req.user.department;
+      const students = await Student.where({ department:department }).fetchAll();
+
+      if (!students || students.length === 0) {
+        const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+      }
+
+      // Return the student details
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          students,
+        },
+      });
+    } else {
+      const err= new AppError("message", code);
+      err.sendResponse(res);
+      return;
+    }
+  } catch (err) {
+    // Handle any errors that occur during the process
+    const err1= new AppError("message", code);
+      err1.sendResponse(res);
+      return;
+  }
+});
+
+
