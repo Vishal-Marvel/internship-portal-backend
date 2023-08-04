@@ -29,7 +29,7 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
             staff_id = req.params.id;
         }
         else if (req.user.roles.includes('mentor')){
-            staff_id = req.params.id;
+            staff_id = req.user.id;
         }
         else{
             return res.status(403).json({
@@ -37,6 +37,7 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
                 message: 'Unauthorized access',
             });
         }
+        console.log(staff_id)
         const students = await Student.where({ staff_id: staff_id }).fetchAll({ withRelated: 'skills' });
         const studentNames = students.map(student => student.get('name'));
         const studentIds = students.map(student => student.get('id'));
@@ -282,7 +283,7 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
     else if (isHOD) {
       // Fetch all staffs in the same department as the HOD
       const department = req.user.department;
-      const staffs = await Staff.where({ department:department }).fetchAll();
+      const staffs = await Staff.where({ department:department, sec_sit:loggedInStaffSecSit }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
         const err= new AppError("No Staff in the department", 404);

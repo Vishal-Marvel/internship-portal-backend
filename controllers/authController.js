@@ -11,7 +11,6 @@ const File = require("../models/fileModel");
 
 const savePhoto = async (buffer, mimetype, fileName, originalname) => {
     try {
-        console.log(mimetype)
         if (!mimetype.startsWith('image')) {
             throw new AppError('File type is invalid', 400);
         }
