@@ -37,7 +37,6 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
                 message: 'Unauthorized access',
             });
         }
-        console.log(staff_id)
         const students = await Student.where({ staff_id: staff_id }).fetchAll({ withRelated: 'skills' });
         const studentNames = students.map(student => student.get('name'));
         const studentIds = students.map(student => student.get('id'));
@@ -128,11 +127,13 @@ exports.updateStaff = catchAsync(async (req, res) => {
         const staffId = req.params.id;
         const {
             name,
-            phone_no
+            phone_no,
+            department,
+            sec_sit
         } = req.body;
 
         const updatedData = {
-          name,phone_no
+          name,phone_no,department,sec_sit
         }
       
           // Find the staff in the database based on the provided ID
@@ -375,7 +376,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
     } else if (isHODOrCoordinator) {
       // Fetch all students from the same department as the HOD or Coordinator
       const department = req.user.department;
-      const students = await Student.where({ department:department }).fetchAll({ withRelated: 'skills' });
+      const students = await Student.where({ department:department ,sec_sit: loggedInStaffSecSit }).fetchAll({ withRelated: 'skills' });
 
       if (!students || students.length === 0) {
         const err= new AppError("No Student found in the department", 404);
