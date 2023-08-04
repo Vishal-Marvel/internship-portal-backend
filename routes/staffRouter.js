@@ -23,7 +23,7 @@ router.route('/:id')
 router.get('/viewStaff/:id',authController.restrictTo('hod','principal','ceo'),staffController.viewStaff);
 router.get('/viewStaff',staffController.viewStaff);//for same logged in staff
 router.get('/viewMultipleStaff',authController.restrictTo('hod','principal','ceo'), staffController.viewMultipleStaff);
-router.get('/viewMultipleStudent',staffController.viewMultipleStudent);
+router.get('/viewMultipleStudent',authController.restrictTo('hod','principal','ceo', "tapcell", "intershipcoordinator"),staffController.viewMultipleStudent);
 router.use(authController.restrictTo("hod", "admin")); // router.use(authController.restrictTo(staffUpdateRoles));
 router.post('/updateRole', staffController.updateRole);
 router.get('/viewRoles', staffController.viewRoles);

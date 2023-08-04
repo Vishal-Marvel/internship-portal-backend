@@ -2,6 +2,7 @@ const Student = require('../models/studentModel');
 const Skill = require('../models/skillModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const File = require("../models/fileModel");
 
 exports.updateStudent = catchAsync(async (req, res) => {
     try {
@@ -76,7 +77,7 @@ exports.updateStudentByStaff = catchAsync(async (req, res) => {
           year_of_studying,
           phone_no,
           placement_status,
-            placed_company
+          placed_company
       } = req.body;
       const updatedData = {
         name, year_of_studying, phone_no,placement_status,
@@ -178,6 +179,18 @@ exports.viewStudent = catchAsync(async (req, res) => {
   
 });
 
+exports.getProfilePhoto = catchAsync(async (req, res) => {
+  try{
+    const file = File.where({id: req.params.id}).fetch();
+   res.send(file.get('file'));
+  }
+  catch(e){
+    if (e.message === "EmptyResponse"){
+      const er = new AppError("Image Not Found", 404);
+      er.sendResponse(res);
+    }
+  }
+})
 exports.viewStudentInternship = catchAsync(async (req, res) => {
 
 });

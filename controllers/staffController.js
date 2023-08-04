@@ -128,11 +128,16 @@ exports.updateStaff = catchAsync(async (req, res) => {
         const staffId = req.params.id;
         const {
             name,
-            phone_no
+            phone_no,
+            email,
+            department,
+            sec_sit
         } = req.body;
 
         const updatedData = {
-          name,phone_no
+          name,phone_no,email,
+            department,
+            sec_sit
         }
       
           // Find the staff in the database based on the provided ID
@@ -251,7 +256,6 @@ exports.viewStaff = catchAsync(async (req, res) => {
       return;
   }
 });
-
 
 exports.viewMultipleStaff = catchAsync(async (req, res) => {
   
