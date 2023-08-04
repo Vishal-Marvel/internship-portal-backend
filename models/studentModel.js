@@ -47,7 +47,7 @@ const Student = bookshelf.model('Student', {
 
 Student.findByIdAndUpdate = async function (id, updatedData) {
   try {
-    const student = await Student.where({id}).fetch();
+    const student = await Student.where({id}).fetch({ withRelated: ['skills'] });
     if (!student) {
       throw new Error('Student not found');
     }
