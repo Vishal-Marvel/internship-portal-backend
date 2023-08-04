@@ -19,6 +19,7 @@ router.get('/viewStudent/:id',authController.restrictTo('hod','principal','inter
 router.get('/viewStudent',studentController.viewStudent);
 router.get('/:id/internships', studentController.viewStudentInternship);
 router.get('/getAllSkills', skillController.getAllSkills)
+router.get('/image/:id', studentController.getProfilePhoto)
 router.use(authController.doNotAllow('student'))
 router.route('/:id')
     .put(studentController.updateStudentByStaff)

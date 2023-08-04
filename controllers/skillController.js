@@ -24,6 +24,7 @@ exports.addSkill = catchAsync(async (req, res) => {
     if (!skillName) {
       const error =  new AppError('Skill name is required.', 400);
       error.sendResponse(res);
+      return;
     }
 
     const newSkill = await Skill.forge({ skill_name: skillName }).save();
