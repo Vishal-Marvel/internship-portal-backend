@@ -87,10 +87,18 @@ exports.studentSignUp = catchAsync(async (req, res) => {
 
         const staff = await Staff.where({email:mentor_email}).fetch();
         const staff_id = staff.id;
-        const { buffer, mimetype, originalname } = req.file;
-        const fileName = `${student_id}_profile_photo`; // Append the unique suffix to the file name
+        let profile_photo = "";
+        if (req.file) {
+            const {buffer, mimetype, originalname} = req.file;
 
-        const profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
+            const fileName = `${student_id}_profile_photo`; // Append the unique suffix to the file name
+
+            profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
+        }
+        else{
+            const photo_file = await File.where({file_name:"default_profile_photo"}).fetch();
+            profile_photo = photo_file.get("id");
+        }
         const student = new Student({
             name,
             sec_sit,
@@ -111,7 +119,7 @@ exports.studentSignUp = catchAsync(async (req, res) => {
 
         skillArr.forEach((skill) => {
             if (!skillNames.includes(skill)){
-                errors.push(`${skill} Not Found`);
+                errors.push(`${skill} skill Not Found`);
             }
         })
         if (errors.length>0){
