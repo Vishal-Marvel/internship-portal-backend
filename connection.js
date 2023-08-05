@@ -221,6 +221,8 @@ knex.schema.hasTable("files").then(exists =>{
             table.string('file_name');
             table.specificType('file', 'longblob');
             table.date('uploaded_at');
+
+            
         })
     }
 })

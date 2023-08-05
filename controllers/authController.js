@@ -175,14 +175,26 @@ exports.staffSignup = catchAsync(async (req, res) => {
           ) {
             throw new AppError("All fields are required", 400);
           }
+        let profile_photo = "";
+        if (req.file) {
+            const {buffer, mimetype, originalname} = req.file;
 
+            const fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
+
+            profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
+        }
+        else{
+            const photo_file = await File.where({file_name:"default_profile_photo"}).fetch();
+            profile_photo = photo_file.get("id");
+        }
         const staff = new Staff({
             name,
             department,
             email,
             sec_sit,
             phone_no,
-            password
+            password,
+            profile_photo
         });
         await staff.save()
 
