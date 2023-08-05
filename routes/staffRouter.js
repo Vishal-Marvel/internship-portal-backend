@@ -30,6 +30,6 @@ router.get('/viewRoles', staffController.viewRoles);
 router.post('/updateMentees', staffController.migrateMentees);
 router.post('/addStaffs', upload.single('file'),  authController.multipleStaffSignup);
 router.use(authController.restrictTo("hod", "admin", "tapcell", "principal", "ceo"));
-router.post('/addSkill', skillController.addSkill)
-router.delete('/deleteSkill', skillController.deleteSkill)
+router.post('/skill/addSkill', skillController.addSkill)
+router.delete('/skill/deleteSkill', skillController.deleteSkill)
 module.exports = router;

@@ -52,12 +52,12 @@ exports.addSkill = catchAsync(async (req, res) => {
 exports.deleteSkill = catchAsync(async (req, res) => {
   try {
     const {skillName} = req.body;
-
+    // console.log(skillName)
     const skill = await Skill.where({skill_name: skillName}).fetch();
 
     await skill.destroy();
 
-    res.json({
+    res.status(200).json({
       status: 'success',
       message: 'Skill deleted successfully',
     });
