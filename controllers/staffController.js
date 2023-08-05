@@ -25,17 +25,16 @@ const validateRoleAssignment = (role, data) => {
 exports.viewMenteeStudents = catchAsync(async (req, res) => {
     try {
         let staff_id;
-        if (req.params.id){
-            staff_id = req.params.id;
-        }
-        else if (req.user.roles.includes('mentor')){
+        if (req.user.roles.includes('mentor')){
             staff_id = req.user.id;
         }
+        else if (req.params.id){
+            staff_id = req.params.id;
+        }
         else{
-            return res.status(403).json({
-                status: 'fail',
-                message: 'Unauthorized access',
-            });
+            const err = new AppError("Unauthorized Access", 401);
+            err.sendResponse(res);
+            return;
         }
         const students = await Student.where({ staff_id: staff_id }).fetchAll({ withRelated: 'skills' });
         const studentNames = students.map(student => student.get('name'));
@@ -97,8 +96,14 @@ exports.updateRole = catchAsync(async (req, res) => {
             message: `${roles.join(', ')} Assigned to ${staffData.name}`,
         });
     } catch (err) {
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
+        if (err.message === "EmptyResponse"){
+            const error = new AppError("Staff or Role Not Found", 404);
+            error.sendResponse(res);
+        }
+        else {
+            const error = new AppError(err.message, 500);
+            error.sendResponse(res);
+        }
     }
 });
 
@@ -164,30 +169,35 @@ exports.updateStaff = catchAsync(async (req, res) => {
           });
       }
       catch (err) {
-          // Handle any errors that occur during the process
-          const error = new AppError(err.message, 400);
-          error.sendResponse(res);
+          if (err.message === "EmptyResponse"){
+              const error = new AppError("Staff Not Found", 404);
+              error.sendResponse(res);
+          }
+          else {
+              const error = new AppError(err.message, 500);
+              error.sendResponse(res);
+          }
       }
 });
 
 exports.deleteStaff = catchAsync(async (req, res) => {
     try {
         const staffId = req.params.id;
-
-        // Find the staff in the database based on the provided ID
         await Staff.findByIdAndDelete(staffId, {tableName: 'staffs'});
-
-    
-        // Send a success response
-        res.status(200).json({
+            res.status(200).json({
           status: 'success',
           message: 'Staff details deleted successfully',
           
         });
       } catch (err) {
-        // Handle any errors that occur during the process
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
+        if (err.message === "EmptyResponse"){
+            const error = new AppError("Staff Not Found", 404);
+            error.sendResponse(res);
+        }
+        else {
+            const error = new AppError(err.message, 500);
+            error.sendResponse(res);
+        }
       }
 });
 
@@ -306,7 +316,7 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       const staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
 
       if (!staffs || staffs.length === 0) {
-        const err= new AppError("No staff found in ${loggedInStaffSecSit ", 404);
+        const err= new AppError(`No staff found in ${loggedInStaffSecSit}`, 404);
         err.sendResponse(res);
         return;
       }
@@ -328,7 +338,6 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
     // Handle any errors that occur during the process
     const err1= new AppError("Failed to fetch Staff details", 500);
     err1.sendResponse(res);
-    return;
   }
 });
 
@@ -363,7 +372,7 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll({ withRelated: 'skills' });
 
       if (!students || students.length === 0) {
-        const err= new AppError("No Student found in ${loggedInStaffSecSit}", 404);
+        const err= new AppError(`No Student found in ${loggedInStaffSecSit}`, 404);
         err.sendResponse(res);
         return;
       }

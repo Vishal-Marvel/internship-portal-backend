@@ -63,9 +63,15 @@ exports.updateStudent = catchAsync(async (req, res) => {
             student: updatedStudentWithSkills.toJSON(),
           },
         });
-  } catch (error) {
-    const err = new AppError(error.message, 400);
-      err.sendResponse(res);
+  } catch (err) {
+      if (err.message === "EmptyResponse"){
+        const error = new AppError("Student Not Found", 404);
+        error.sendResponse(res);
+      }
+      else {
+        const error = new AppError(err.message, 500);
+        error.sendResponse(res);
+      }
   }
 });
 
@@ -83,30 +89,36 @@ exports.updateStudentByStaff = catchAsync(async (req, res) => {
         name, year_of_studying, phone_no,placement_status,
         placed_company
       }
-        const student = await Student.findByIdAndUpdate(studentId, updatedData, {
-          new: true,
-          runValidators: true,
-          tableName: 'students'
-        });
+      const student = await Student.findByIdAndUpdate(studentId, updatedData, {
+        new: true,
+        runValidators: true,
+        tableName: 'students'
+      });
 
-        if (!student) {
-          const err= new AppError("Student not found", 404);
-          err.sendResponse(res);
-          return;
-        }
+      if (!student) {
+        const err = new AppError("Student not found", 404);
+        err.sendResponse(res);
+        return;
+      }
 
-        const updatedStudentWithSkills = await Student.forge({ id: studentId }).fetch({ withRelated: 'skills' });
+      const updatedStudentWithSkills = await Student.where({id: studentId}).fetch({withRelated: 'skills'});
 
-        res.status(200).json({
-          status: 'success',
-          message: 'Student details updated successfully',
-          data: {
-            student: updatedStudentWithSkills.toJSON(),
-          },
-        });
-  } catch (error) {
-    const err = new AppError(error.message, 400);
-    err.sendResponse(res);
+      res.status(200).json({
+        status: 'success',
+        message: 'Student details updated successfully',
+        data: {
+          student: updatedStudentWithSkills.toJSON(),
+        },
+      });
+  } catch (err) {
+      if (err.message === "EmptyResponse"){
+        const error = new AppError("Student Not Found", 404);
+        error.sendResponse(res);
+      }
+      else {
+        const error = new AppError(err.message, 500);
+        error.sendResponse(res);
+      }
   }
 });
 
@@ -125,9 +137,14 @@ exports.deleteStudent = catchAsync(async (req, res) => {
       
     });
   } catch (err) {
-    // Handle any errors that occur during the process
-    const error = new AppError(err.message, 400);
-    error.sendResponse(res);
+    if (err.message === "EmptyResponse"){
+      const error = new AppError("Student Not Found", 404);
+      error.sendResponse(res);
+    }
+    else {
+      const error = new AppError(err.message, 500);
+      error.sendResponse(res);
+    }
   }
 });
 
@@ -146,7 +163,7 @@ exports.viewStudent = catchAsync(async (req, res) => {
     if (isStudent) {
       studentId = loggedInUserId;
     } else if (!req.params.id) {
-      const err = new AppError("Stduent Id is required", 403);
+      const err = new AppError("Student Id is required", 403);
       err.sendResponse(res);
       return;
     } else {
@@ -156,7 +173,7 @@ exports.viewStudent = catchAsync(async (req, res) => {
     const student = await Student.where({ id: studentId }).fetch({ withRelated: 'skills' });
 
     if (!student) {
-      const err= new AppError("No Student found in the database", 404);
+      const err= new AppError("Student not Found", 404);
       err.sendResponse(res);
       return;
     }
@@ -194,6 +211,7 @@ exports.getProfilePhoto = catchAsync(async (req, res) => {
     }
   }
 })
+
 exports.viewStudentInternship = catchAsync(async (req, res) => {
 
 });
