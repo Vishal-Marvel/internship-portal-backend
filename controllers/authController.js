@@ -214,6 +214,7 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
             try {
                 if (rowNumber > 1) {
                     const [_, name, department, email, sec_sit, phone_no, password, roles] = row.values;
+                    console.log(row.values);
                     const staff = new Staff({
                         name,
                         department,
