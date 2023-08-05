@@ -35,5 +35,5 @@ router.use(authController.doNotAllow('student')); // Restricting Students
 router.post('/approval/:role/:id', internship.approveInternship);
 router.post('/send-back/:role/:id', internship.sendBack);
 router.post('/reject/:role/:id', internship.reject);
-router.get('/all', internship.viewInternships);
+router.get('/view/all', internship.viewInternships);
 module.exports = router;

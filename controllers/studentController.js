@@ -142,11 +142,14 @@ exports.viewStudent = catchAsync(async (req, res) => {
     const isMentor = loggedInUserRole.includes('mentor');
     const isCeo = loggedInUserRole.includes('ceo');
     let studentId;
-    
-    if(isStudent){
+
+    if (isStudent) {
       studentId = loggedInUserId;
-    }
-    else{
+    } else if (!req.params.id) {
+      const err = new AppError("Stduent Id is required", 403);
+      err.sendResponse(res);
+      return;
+    } else {
       studentId = req.params.id; // ID of the student to view
     }
     // Fetch the student from the database based on the studentId
