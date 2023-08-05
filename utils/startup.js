@@ -70,7 +70,7 @@ exports.performStartUp = async function () {
         }
     }
         // Path to the file on the server
-        const filePath = 'public/images/logo.jpg';
+        const filePath = 'public/images/logo.png';
 
         // Read the file using fs.readFile
         fs.readFile(filePath, 'utf8', async (err, data) => {

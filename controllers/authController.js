@@ -222,6 +222,9 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
             const error =  new AppError('No Excel file uploaded', 400);
             error.sendResponse(res);
         }
+        
+        const photo_file = await File.where({file_name:"default_profile_photo"}).fetch();
+        const default_profile_id = photo_file.get("id");
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(req.file.buffer);
         const worksheet = workbook.getWorksheet(1);
@@ -241,6 +244,7 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
                         sec_sit,
                         phone_no,
                         password,
+                        profile_photo : default_profile_id
                     });
                     if (
                         !name ||
