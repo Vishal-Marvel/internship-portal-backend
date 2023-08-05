@@ -19,6 +19,7 @@ const createStaffsTable = async () => {
                     table.string('email');
                     table.string('phone_no');
                     table.string('password');
+                    table.string('profile_photo');
                     table.unique(['email'])
                     console.log('Staffs table created successfully');
                 });
