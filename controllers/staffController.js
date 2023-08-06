@@ -182,7 +182,7 @@ exports.updateStaff = catchAsync(async (req, res) => {
             const defaultProfilePhoto = await File.where({file_name: 'default_profile_photo'}).fetch();
             const defaultProfilePhotoId = defaultProfilePhoto.get('id');
 
-            if (existingProfilePhotoId !== defaultProfilePhotoId) {
+            if (existingProfilePhotoId !== defaultProfilePhotoId && existingProfilePhotoId) {
                 await File.where({id: existingProfilePhotoId}).destroy();
 
             }
