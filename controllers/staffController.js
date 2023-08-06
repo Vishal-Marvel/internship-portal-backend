@@ -169,11 +169,10 @@ exports.updateStaff = catchAsync(async (req, res) => {
             sec_sit,
         } = req.body;
         let profile_photo;
-        let fileName;
         if (req.file) {
             // Create a new record in the "files" table to store the new photo
             const {buffer, mimetype, originalname} = req.file;
-             fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
+            const fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
 
             // Delete the existing profile photo if it exists and not a default photo
             const existingStaff = await Staff.where({id: staffId}).fetch();
@@ -187,7 +186,6 @@ exports.updateStaff = catchAsync(async (req, res) => {
                 await File.where({id: existingProfilePhotoId}).destroy();
 
             }
-
             // Update the profile_photo field with the new photo ID
             profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
         }
@@ -214,10 +212,10 @@ exports.updateStaff = catchAsync(async (req, res) => {
             });
           }
           // Update the file name based on the staff details
-          if (req.file && fileName) {
-            fileName = `${staff.get('name')}_profile_photo`;
-            await File.where({ id: profile_photo }).save({ file_name: fileName });
-          }
+          // if (req.file && fileName) {
+          //   fileName = `${staff.get('name')}_profile_photo`;
+          //   await File.where({ id: profile_photo }).save({ file_name: fileName });
+          // }
           // Send a success response
           res.status(200).json({
             status: 'success',
