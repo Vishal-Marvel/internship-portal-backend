@@ -7,6 +7,7 @@ const AppError = require('../utils/appError');
 const jwt = require("jsonwebtoken");
 const ExcelJS = require('exceljs');
 const File = require("../models/fileModel");
+const {sendEmail} = require("../utils/mail");
 
 
 const savePhoto = async (buffer, mimetype, fileName, originalname) => {
@@ -50,7 +51,17 @@ const validateRoleAssignment = (role, data) => {
         }
     }
 };
+const generateOTP = (length) => {
+    const characters = '0123456789';
+    let otp = '';
 
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        otp += characters[randomIndex];
+    }
+
+    return otp;
+}
 // Signup function
 exports.studentSignUp = catchAsync(async (req, res) => {
 
@@ -399,12 +410,54 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             const error = new AppError("Staff Not Found", 404);
             error.sendResponse(res);
         }
-        throw err;
+        else{
+            const error = new AppError(err.message, 500);
+            error.sendResponse(res);
+        }
     }
 })
 
 exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
+    try{
+        const staffMail = req.body.email;
+        if (!staffMail) {
+            const err = new AppError("Staff email is required", 404);
+            err.sendResponse(res);
+            return;
+        }
+        const staff = await Staff.where({email: staffMail}).fetch();
 
+        const otp = generateOTP(6);
+        const otpLimit = new Date()
+        otpLimit.setHours(otpLimit.getHours() + 1);
+        console.log(otpLimit)
+        await Staff.findByIdAndUpdate(staff.get('id'),
+            {
+                OTP: otp, OTP_validity: otpLimit
+            }, {
+                new: true,
+                runValidators: true,
+                tableName: 'staffs'
+            }
+        );
+        await sendEmail(staff.get('email'), "Forgot Password Request"
+            , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
+            This is a auto generated mail. Do Not Reply`);
+        res.status(200).json({
+            status: "success",
+            message: "OTP sent"
+        })
+    }
+    catch (e){
+        if (e.message === "EmptyResponse") {
+            const error = new AppError("Staff Not Found", 404);
+            error.sendResponse(res);
+        }
+        else{
+            const error = new AppError(e.message, 500);
+            error.sendResponse(res);
+        }
+    }
 })
 
 exports.protect = catchAsync(async (req, res, next) => {

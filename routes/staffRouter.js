@@ -12,6 +12,7 @@ const upload = multer({
 });
 router.post('/signup', authController.staffSignup);
 router.post('/login', authController.staffLogin);
+router.post('/forgot-password', authController.staffForgotPasswordReq);
 
 router.use(authController.protect);
 router.use(authController.doNotAllow("student"));
