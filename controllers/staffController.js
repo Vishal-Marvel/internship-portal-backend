@@ -154,37 +154,42 @@ exports.viewRoles = catchAsync(async (req, res) => {
 
 exports.updateStaff = catchAsync(async (req, res) => {
     try {
-        const staffId = req.params.id;
+        let staffId;
+        if (req.params.id) {
+            staffId = req.params.id;
+        }else{
+            staffId = req.user.id;
+        }
+
         const {
             name,
             phone_no,
             email,
             department,
             sec_sit,
-            profile_photo
         } = req.body;
-
+        let profile_photo;
         if (req.file) {
-        // Create a new record in the "files" table to store the new photo
-        const {buffer, mimetype, originalname} = req.file;
-        const fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
+            // Create a new record in the "files" table to store the new photo
+            const {buffer, mimetype, originalname} = req.file;
+            const fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
 
-        // Delete the existing profile photo if it exists and not a default photo
-        const existingStaff = await Staff.where({ id: staffId }).fetch();
-        const existingProfilePhotoId = existingStaff.get('profile_photo');
+            // Delete the existing profile photo if it exists and not a default photo
+            const existingStaff = await Staff.where({id: staffId}).fetch();
+            const existingProfilePhotoId = existingStaff.get('profile_photo');
 
-        // Retrieve the default profile photo ID from the files table
-        const defaultProfilePhoto = await File.where({ file_name: 'default_profile_photo' }).fetch();
-        const defaultProfilePhotoId = defaultProfilePhoto.get('id');
-  
-        if (existingProfilePhotoId!==defaultProfilePhotoId){
-         await File.where({ id: existingProfilePhotoId }).destroy();
-        
+            // Retrieve the default profile photo ID from the files table
+            const defaultProfilePhoto = await File.where({file_name: 'default_profile_photo'}).fetch();
+            const defaultProfilePhotoId = defaultProfilePhoto.get('id');
+
+            if (existingProfilePhotoId !== defaultProfilePhotoId) {
+                await File.where({id: existingProfilePhotoId}).destroy();
+
+            }
+
+            // Update the profile_photo field with the new photo ID
+            profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
         }
-
-        // Update the profile_photo field with the new photo ID
-        const profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
-      }
 
         const updatedData = {
           name,phone_no,email,

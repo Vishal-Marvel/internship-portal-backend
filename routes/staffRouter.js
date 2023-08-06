@@ -17,8 +17,9 @@ router.use(authController.protect);
 router.use(authController.doNotAllow("student"));
 router.get('/mentee-students',authController.restrictTo('mentor'), staffController.viewMenteeStudents);
 router.get('/:id/mentee-students', staffController.viewMenteeStudents);
+router.put('/update', upload.single('file'),  staffController.updateStaff)
 router.route('/:id')
-    .put(staffController.updateStaff)
+    .put(authController.restrictTo('hod', 'admin', 'principal'),upload.single('file'),  staffController.updateStaff)
     .delete(authController.restrictTo('hod', 'admin', 'principal'), staffController.deleteStaff)
 router.get('/viewStaff/:id',authController.restrictTo('hod','principal','ceo'),staffController.viewStaff);
 router.get('/viewStaff',staffController.viewStaff);//for same logged in staff
