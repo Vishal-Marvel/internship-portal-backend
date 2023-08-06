@@ -3,7 +3,32 @@ const Staff = require('../models/staffModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Role = require("../models/roleModel");
+const File = require("../models/fileModel");
 
+const savePhoto = async (buffer, mimetype, fileName, originalname) => {
+  try {
+      if (!mimetype.startsWith('image')) {
+          throw new AppError('File type is invalid', 400);
+      }
+
+      const file = new File({
+          file_name: fileName,
+          file: buffer
+      });
+
+      await file.save();
+
+      return file.id;
+  }
+  catch (e){
+      if (e.code === 'ER_DATA_TOO_LONG'){
+          throw new AppError(`File ${originalname} is too large`,  400);
+      }
+      else{
+          throw new AppError(e.message,  500);
+      }
+  }
+};
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -135,13 +160,37 @@ exports.updateStaff = catchAsync(async (req, res) => {
             phone_no,
             email,
             department,
-            sec_sit
+            sec_sit,
+            profile_photo
         } = req.body;
+
+        if (req.file) {
+        // Create a new record in the "files" table to store the new photo
+        const {buffer, mimetype, originalname} = req.file;
+        const fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
+
+        // Delete the existing profile photo if it exists and not a default photo
+        const existingStaff = await Staff.where({ id: staffId }).fetch();
+        const existingProfilePhotoId = existingStaff.get('profile_photo');
+
+        // Retrieve the default profile photo ID from the files table
+        const defaultProfilePhoto = await File.where({ file_name: 'default_profile_photo' }).fetch();
+        const defaultProfilePhotoId = defaultProfilePhoto.get('id');
+  
+        if (existingProfilePhotoId!==defaultProfilePhotoId){
+         await File.where({ id: existingProfilePhotoId }).destroy();
+        
+        }
+
+        // Update the profile_photo field with the new photo ID
+        const profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
+      }
 
         const updatedData = {
           name,phone_no,email,
             department,
-            sec_sit
+            sec_sit,
+            profile_photo
         }
       
           // Find the staff in the database based on the provided ID
