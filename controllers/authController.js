@@ -403,6 +403,10 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
     }
 })
 
+exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
+
+})
+
 exports.protect = catchAsync(async (req, res, next) => {
     let token;
     // Get token

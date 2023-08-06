@@ -20,6 +20,8 @@ const createStaffsTable = async () => {
                     table.string('phone_no');
                     table.string('password');
                     table.string('profile_photo');
+                    table.integer('OTP');
+                    table.date('OTP_validity');
                     table.unique(['email'])
                     console.log('Staffs table created successfully');
                 });
