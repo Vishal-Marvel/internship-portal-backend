@@ -172,11 +172,6 @@ exports.viewStudent = catchAsync(async (req, res) => {
     // Fetch the student from the database based on the studentId
     const student = await Student.where({ id: studentId }).fetch({ withRelated: 'skills' });
 
-    if (!student) {
-      const err= new AppError("Student not Found", 404);
-      err.sendResponse(res);
-      return;
-    }
 
     if (isStudent || isHOD || isPrincipal|| isInternshipCoordinator|| isMentor||isCeo) {
       // Return the student details
@@ -192,9 +187,14 @@ exports.viewStudent = catchAsync(async (req, res) => {
     }
   } 
   catch (err) {
-    // Handle any errors that occur during the process
-    const err1= new AppError("Failed to fetch student details", 500);
+    if (err.message === "EmptyResponse"){
+      const err1= new AppError("Student Not Found", 404);
       err1.sendResponse(res);
+    }else {
+      // Handle any errors that occur during the process
+      const err1 = new AppError("Failed to fetch student details", 500);
+      err1.sendResponse(res);
+    }
   }
   
 });
