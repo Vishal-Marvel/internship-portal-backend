@@ -125,7 +125,7 @@ exports.updateStudentByStaff = catchAsync(async (req, res) => {
 
 exports.deleteStudent = catchAsync(async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const studentId = req.params.id;
 
     // Find the student in the database based on the provided ID
     await Student.findByIdAndDelete(studentId, {tableName: 'students'});
