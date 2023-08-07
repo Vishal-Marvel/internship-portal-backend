@@ -8,32 +8,7 @@ const jwt = require("jsonwebtoken");
 const ExcelJS = require('exceljs');
 const File = require("../models/fileModel");
 const {sendEmail} = require("../utils/mail");
-
-
-const savePhoto = async (buffer, mimetype, fileName, originalname) => {
-    try {
-        if (!mimetype.startsWith('image')) {
-            throw new AppError('File type is invalid', 400);
-        }
-
-        const file = new File({
-            file_name: fileName,
-            file: buffer
-        });
-
-        await file.save();
-
-        return file.id;
-    }
-    catch (e){
-        if (e.code === 'ER_DATA_TOO_LONG'){
-            throw new AppError(`File ${originalname} is too large`,  400);
-        }
-        else{
-            throw new AppError(e.message,  500);
-        }
-    }
-};
+const {savePhoto} = require("../utils/saveFiles");
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -96,8 +71,28 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             throw new AppError("All fields are required", 400);
           }
 
-        const staff = await Staff.where({email:mentor_email}).fetch();
-        const staff_id = staff.id;
+        const staff = await Staff.where({email: mentor_email}).fetch()
+            .then((staff) => {
+            if (!staff) {
+                throw new AppError(`Staff with mail '${mentor_email}' not Found`, 404)
+            }
+            else{
+                return staff
+            }
+        });
+        const staff_id = staff.get('id');
+        await Student.query((qb) =>{
+            qb.where({email:email}).orWhere({student_id:student_id});
+        }).fetch().then((student)=>{
+            if (student){
+                throw new AppError("Student Already Exists", 400)
+            }
+        }).catch((err)=>{
+            if (err.message==="EmptyResponse"){}
+            else{
+                throw new AppError(err.message, 400)
+            }
+        });
         let profile_photo = "";
         if (req.file) {
             const {buffer, mimetype, originalname} = req.file;
@@ -157,18 +152,9 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             }
         });
     } catch (err) {
-        if (err.message === "EmptyResponse"){
-            const error = new AppError("Staff Not Found", 404);
-            error.sendResponse(res);
-        }
-        else if (err.code==="ER_DUP_ENTRY"){
-            const error = new AppError("Student Already Exists", 400);
-            error.sendResponse(res);
-        }
-        else {
-            const error = new AppError(err.message, 400);
-            error.sendResponse(res);
-        }
+        // throw err
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
     }
 })
 
@@ -192,6 +178,17 @@ exports.staffSignup = catchAsync(async (req, res) => {
           ) {
             throw new AppError("All fields are required", 400);
           }
+        Staff.where({email:email}).fetch()
+            .then((staff)=>{
+                if (staff){
+                    throw new AppError(`Staff with mail ${email} already Exists`);
+                }
+            }).catch((err)=>{
+                if (err.message==="EmptyResponse"){}
+                else{
+                    throw new AppError(err.message);
+                }
+        })
         let profile_photo;
         if (req.file) {
             const {buffer, mimetype, originalname} = req.file;
@@ -222,14 +219,10 @@ exports.staffSignup = catchAsync(async (req, res) => {
             }
         });
     } catch (err) {
-        if (err.code==="ER_DUP_ENTRY"){
-            const error = new AppError("Staff Already Exists", 400);
-            error.sendResponse(res);
-        }
-        else {
-            const error = new AppError(err.message, 400);
-            error.sendResponse(res);
-        }
+
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+
     }
 })
 

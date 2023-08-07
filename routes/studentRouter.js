@@ -14,7 +14,7 @@ router.post('/login', authController.studentLogin);
 
 router.use(authController.protect)
 
-router.put('/update', authController.restrictTo('student'), studentController.updateStudent);
+router.put('/update', authController.restrictTo('student'),upload.single('file'),  studentController.updateStudent);
 router.get('/viewStudent/:id',authController.restrictTo('hod','principal','internshipcoordinator','mentor','ceo'),studentController.viewStudent);
 router.get('/viewStudent',studentController.viewStudent);
 router.get('/:id/internships', studentController.viewStudentInternship);

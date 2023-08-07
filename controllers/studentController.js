@@ -3,6 +3,7 @@ const Skill = require('../models/skillModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const File = require("../models/fileModel");
+const {savePhoto} = require("../utils/saveFiles");
 
 exports.updateStudent = catchAsync(async (req, res) => {
     try {
@@ -13,8 +14,30 @@ exports.updateStudent = catchAsync(async (req, res) => {
           phone_no,
           skills
       } = req.body;
+
+      let profile_photo;
+      if (req.file) {
+        // Create a new record in the "files" table to store the new photo
+        const {buffer, mimetype, originalname} = req.file;
+        const fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
+
+        // Delete the existing profile photo if it exists and not a default photo
+        const existingStudent = await Student.where({id: studentId}).fetch();
+        const existingProfilePhotoId = existingStudent.get('profile_photo');
+
+        // Retrieve the default profile photo ID from the files table
+        const defaultProfilePhoto = await File.where({file_name: 'default_profile_photo'}).fetch();
+        const defaultProfilePhotoId = defaultProfilePhoto.get('id');
+
+        if (existingProfilePhotoId !== defaultProfilePhotoId && existingProfilePhotoId) {
+          await File.where({id: existingProfilePhotoId}).destroy();
+
+        }
+        // Update the profile_photo field with the new photo ID
+        profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
+      }
       const updatedData = {
-        name, year_of_studying, phone_no
+        name, year_of_studying, phone_no, profile_photo
       }
         const student = await Student.findByIdAndUpdate(studentId, updatedData, {
           new: true,
@@ -28,7 +51,8 @@ exports.updateStudent = catchAsync(async (req, res) => {
         return;
       }
       let skillArr
-      if (! Array.isArray(skills)) {
+      console.log(skills)
+      if (!Array.isArray(skills)) {
         skillArr = skills.split(',').map(skill => skill.trim());
       }
       else{
@@ -37,7 +61,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
       const existingSkills = await student.related('skills').pluck('skill_name');
       const skillsToDelete = existingSkills.filter((skill_id) => !skillArr.includes(skill_id));
       const skillsToAdd = skillArr.filter((skill_id) => !existingSkills.includes(skill_id));
-      console.log(existingSkills, skillsToDelete, skillsToAdd);
+      // console.log(existingSkills, skillsToDelete, skillsToAdd);
       const allSkills = await Skill.fetchAll();
       const skillNames = allSkills.map(skill => skill.get('skill_name'));
       const errors = [];
@@ -57,25 +81,26 @@ exports.updateStudent = catchAsync(async (req, res) => {
       const skillsToDeleteIds = skillsToDeleteObj.map(skill => skill.get('id'));
       const skillsToAddIds = skillsToAddObj.map(skill => skill.get('id'));
 
-      student.skills().detach(skillsToDeleteIds);
+      await student.skills().detach(skillsToDeleteIds);
 
-      student.skills().attach(skillsToAddIds);
+      await student.skills().attach(skillsToAddIds);
 
       const updatedStudentWithSkills = await Student.forge({id: studentId}).fetch({withRelated: 'skills'});
 
-        res.status(200).json({
-          status: 'success',
-          message: 'Student details and skills updated successfully',
-          data: {
-            student: updatedStudentWithSkills.toJSON(),
-          },
-        });
+      res.status(200).json({
+        status: 'success',
+        message: 'Student details and skills updated successfully',
+        data: {
+          student: updatedStudentWithSkills.toJSON(),
+        },
+      });
   } catch (err) {
       if (err.message === "EmptyResponse"){
         const error = new AppError("Student Not Found", 404);
         error.sendResponse(res);
       }
       else {
+        throw err
         const error = new AppError(err.message, 500);
         error.sendResponse(res);
       }

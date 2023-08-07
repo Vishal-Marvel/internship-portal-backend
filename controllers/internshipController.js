@@ -3,6 +3,7 @@ const Approval = require("../models/approvalModel")
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const {sendEmail} = require("../utils/mail");
+const {saveFile} = require("../utils/saveFiles");
 const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
 const File = require("../models/fileModel");
@@ -15,30 +16,6 @@ const cron = require('node-cron');
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-const saveFile = async (buffer, mimetype, fileName, originalname) => {
-    try {
-        if (mimetype !== 'application/pdf') {
-            throw new AppError('File type is invalid', 400);
-        }
-
-        const file = new File({
-            file_name: fileName,
-            file: buffer
-        });
-
-        await file.save();
-
-        return file.id;
-    }
-    catch (e){
-        if (e.code === 'ER_DATA_TOO_LONG'){
-           throw new AppError(`File ${originalname} is too large`,  400);
-        }
-        else{
-            throw new AppError(e.message,  500);
-        }
-    }
-};
 
 exports.registerInternship = catchAsync(async (req, res) => {
     try {
