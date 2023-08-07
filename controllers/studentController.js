@@ -27,7 +27,13 @@ exports.updateStudent = catchAsync(async (req, res) => {
         err.sendResponse(res);
         return;
       }
-      const skillArr = skills.split(',').map(skill => skill.trim());
+      let skillArr
+      if (! Array.isArray(skills)) {
+        skillArr = skills.split(',').map(skill => skill.trim());
+      }
+      else{
+        skillArr = skills
+      }
       const existingSkills = await student.related('skills').pluck('skill_name');
       const skillsToDelete = existingSkills.filter((skill_id) => !skillArr.includes(skill_id));
       const skillsToAdd = skillArr.filter((skill_id) => !existingSkills.includes(skill_id));

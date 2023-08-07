@@ -126,7 +126,13 @@ exports.studentSignUp = catchAsync(async (req, res) => {
         const allSkills = await Skill.fetchAll();
         const skillNames = allSkills.map(skill => skill.get('skill_name'));
         const errors = [];
-        const skillArr = skills.split(',').map(skill => skill.trim());
+        let skillArr;
+        if (! Array.isArray(skills)) {
+            skillArr = skills.split(',').map(skill => skill.trim());
+        }
+        else{
+            skillArr = skills
+        }
 
         skillArr.forEach((skill) => {
             if (!skillNames.includes(skill)){
