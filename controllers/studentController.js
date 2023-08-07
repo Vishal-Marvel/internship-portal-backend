@@ -27,9 +27,10 @@ exports.updateStudent = catchAsync(async (req, res) => {
         err.sendResponse(res);
         return;
       }
+      const skillArr = skills.split(',').map(skill => skill.trim());
       const existingSkills = await student.related('skills').pluck('skill_name');
-      const skillsToDelete = existingSkills.filter((skill_id) => !skills.includes(skill_id));
-      const skillsToAdd = skills.filter((skill_id) => !existingSkills.includes(skill_id));
+      const skillsToDelete = existingSkills.filter((skill_id) => !skillArr.includes(skill_id));
+      const skillsToAdd = skillArr.filter((skill_id) => !existingSkills.includes(skill_id));
       console.log(existingSkills, skillsToDelete, skillsToAdd);
       const allSkills = await Skill.fetchAll();
       const skillNames = allSkills.map(skill => skill.get('skill_name'));
