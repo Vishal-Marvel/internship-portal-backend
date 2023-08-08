@@ -46,11 +46,14 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             sec_sit,
             student_id,
             year_of_studying,
+            batch,
             register_num,
             department,
+            section,
             email,
             phone_no,
             password,
+            mentor_name,
             mentor_email,
             skills
         } = req.body;
@@ -60,11 +63,14 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             !sec_sit ||
             !student_id ||
             !year_of_studying ||
+            !batch||
             !register_num ||
             !department ||
+            !section||
             !email ||
             !phone_no ||
             !password ||
+            !mentor_name||
             !mentor_email ||
             !skills
           ) {
@@ -110,11 +116,14 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             sec_sit,
             student_id,
             year_of_studying,
+            batch,
             register_num,
             department,
+            section,
             email,
             phone_no,
             password,
+            mentor_name,
             staff_id,
             profile_photo
         })
@@ -162,6 +171,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
 
     try {
         const {
+            faculty_id,
             name,
             department,
             email,
@@ -171,6 +181,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
         } = req.body;
 
         if (
+            !faculty_id||
             !name ||
             !email ||
             !phone_no ||
@@ -193,7 +204,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
         if (req.file) {
             const {buffer, mimetype, originalname} = req.file;
 
-            const fileName = `${name}_profile_photo`; // Append the unique suffix to the file name
+            const fileName = `${faculty_id}_profile_photo`; // Append the unique suffix to the file name
 
             profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
         }
@@ -202,6 +213,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
             profile_photo = photo_file.get("id");
         }
         const staff = new Staff({
+            faculty_id,
             name,
             department,
             email,
@@ -246,8 +258,9 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
         worksheet.eachRow(async (row, rowNumber) => {
             try {
                 if (rowNumber > 1) {
-                    const [_, name, department, email, sec_sit, phone_no, password, roles] = row.values;
+                    const [_, faculty_id, name, department, email, sec_sit, phone_no, password, roles] = row.values;
                     const staff = new Staff({
+                        faculty_id,
                         name,
                         department,
                         email,
@@ -257,6 +270,7 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
                         profile_photo : default_profile_id
                     });
                     if (
+                        !faculty_id||
                         !name ||
                         !email ||
                         !phone_no ||

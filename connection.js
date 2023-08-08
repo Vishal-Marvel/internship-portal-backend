@@ -16,6 +16,7 @@ const createStaffsTable = async () => {
                     table.string('department');
                     table.string('sec_sit');
                     table.date('registered_date');
+                    table.string('faculty_id').unique();
                     table.string('email');
                     table.string('phone_no');
                     table.string('password');
@@ -44,9 +45,11 @@ const createStudentsTable = async () => {
                     table.string('sec_sit');
                     table.string('student_id').unique();
                     table.integer('year_of_studying');
+                    table.integer('batch');
                     table.date('registered_date');
                     table.string('register_num');
                     table.string('department');
+                    table.string('section');
                     table.string('email').unique();
                     table.string('phone_no');
                     table.string('password');
@@ -54,6 +57,7 @@ const createStudentsTable = async () => {
                     table.boolean('placement_status');
                     table.string('placed_company');
                     table.string('profile_photo');
+                    table.string('mentor_name');
                     table.string('staff_id'); // Add staff_id column for the foreign key
                     table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
                     console.log('Students table created successfully');

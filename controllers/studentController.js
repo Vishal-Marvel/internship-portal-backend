@@ -11,6 +11,8 @@ exports.updateStudent = catchAsync(async (req, res) => {
         const {
           name,
           year_of_studying,
+          batch,
+          section,
           phone_no,
           skills
       } = req.body;
@@ -37,7 +39,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
         profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
       }
       const updatedData = {
-        name, year_of_studying, phone_no, profile_photo
+        name, year_of_studying,batch,section, phone_no, profile_photo
       }
         const student = await Student.findByIdAndUpdate(studentId, updatedData, {
           new: true,
@@ -114,11 +116,13 @@ exports.updateStudentByStaff = catchAsync(async (req, res) => {
           name,
           year_of_studying,
           phone_no,
+          batch,
+          section,
           placement_status,
           placed_company
       } = req.body;
       const updatedData = {
-        name, year_of_studying, phone_no,placement_status,
+        name, year_of_studying,batch,section, phone_no,placement_status,
         placed_company
       }
       const student = await Student.findByIdAndUpdate(studentId, updatedData, {

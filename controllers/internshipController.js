@@ -418,9 +418,9 @@ exports.approveInternship = catchAsync(async (req,res)=>{
               }).fetchAll();
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
-                // await sendEmail(email, "Internship Approval - " + student.get('name')
-                //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                //     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+                await sendEmail(email, "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             }
             res.status(200).json({
@@ -457,9 +457,9 @@ exports.approveInternship = catchAsync(async (req,res)=>{
               }).fetchAll();
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
-                // await sendEmail(email, "Internship Approval - " + student.get('name')
-                //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                //     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+                await sendEmail(email, "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             }
             res.status(200).json({
@@ -494,9 +494,9 @@ exports.approveInternship = catchAsync(async (req,res)=>{
 
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
-                // await sendEmail(email, "Internship Approval - " + student.get('name')
-                //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                //     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+                await sendEmail(email, "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             }
             res.status(200).json({
@@ -531,9 +531,9 @@ exports.approveInternship = catchAsync(async (req,res)=>{
               }).fetchAll();
             const staffEmails = staffs.map(staffMember => staffMember.get('email'));
             for (const email of staffEmails) {
-                // await sendEmail(email, "Internship Approval - " + student.get('name')
-                //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                //     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+                await sendEmail(email, "Internship Approval - " + student.get('name')
+                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
+                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             }
             res.status(200).json({
@@ -558,8 +558,8 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                     commented_at: null
                 });
             }await approval.save();
-            // await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
-            // student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
+            student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             res.status(200).json({
                 status: "success",
