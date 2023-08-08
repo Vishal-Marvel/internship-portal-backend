@@ -11,7 +11,7 @@ exports.performStartUp = async function () {
             role_name: "admin"
         });
         await admin.save();
-        
+
         const internshipcoordinator = new Role({
             role_name: "internshipcoordinator"
         });
@@ -48,7 +48,7 @@ exports.performStartUp = async function () {
         if (e.code === "ER_DUP_ENTRY") {
 
         } else {
-            throw new AppError(e.message, 500);
+            console.error(e.message);
         }
     }
     try {
@@ -66,35 +66,28 @@ exports.performStartUp = async function () {
     } catch (e) {
         if (e.code === "ER_DUP_ENTRY") {
         } else {
-            throw new AppError(e.message, 500);
+            console.error(e.message);
         }
     }
-        // Path to the file on the server
-        const filePath = 'public/images/default.png';
-
-        // Read the file using fs.readFile
-        fs.readFile(filePath, 'utf8', async (err, data) => {
-            if (err) {
-                console.error('Error reading file:', err);
-                return;
-            }
-
-            try {
-                const chk_file = await File.where({file_name: "default_profile_photo"}).fetchAll();
-                if (chk_file.length === 0) {
-
-                // Save the file data to the database using the File model
-                const file = new File({file: data, file_name: "default_profile_photo"}); // 'data' is the column name in the 'files' table where you want to store the file content
-                await file.save();
-
-                console.log('Profile Photo saved to the database');
-                }
-            } catch (error) {
-                console.error('Error saving file data to the database:', error);
-            }
-        });
-
-
+    // Path to the file on the server
+    const filePath = 'public/images/default.jpg';
+    const fileBuffer = fs.readFileSync(filePath);
+    if (!fileBuffer){
+        console.error("Error in Reading File");
+        process.exit(0)
+    }
+    const chkFile = await File.where({file_name:"default_profile_photo"}).fetch()
+        .catch((err) =>{
+            if (err.message === "EmptyResponse"){}
+        })
+    if(!chkFile){
+        const file = new File({
+            file_name: "default_profile_photo",
+            file: fileBuffer
+        })
+        await file.save();
+        console.log("profile Photo saved");
+    }
 
     console.log('Startup tasks completed');
 }

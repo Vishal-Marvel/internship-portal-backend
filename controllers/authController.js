@@ -189,10 +189,12 @@ exports.staffSignup = catchAsync(async (req, res) => {
           ) {
             throw new AppError("All fields are required", 400);
           }
-        Staff.where({email:email}).fetch()
+        Staff.query((qb)=>{
+            qb.where({email:email}).orWhere({faculty_id: faculty_id});
+        }).fetch()
             .then((staff)=>{
                 if (staff){
-                    throw new AppError(`Staff with mail ${email} already Exists`);
+                    throw new AppError(`Staff with mail ${email} or id ${faculty_id} already Exists`);
                 }
             }).catch((err)=>{
                 if (err.message==="EmptyResponse"){}
@@ -251,7 +253,7 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
         await workbook.xlsx.load(req.file.buffer);
         const worksheet = workbook.getWorksheet(1);
         const staffList = [];
-        const errors = [];
+        let errors = [];
         const staffRole = new Map();
         const roleObjsMap = new Map(); // To store fetched role objects using role_name as key
 
@@ -297,13 +299,22 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
             }
         });
         if (errors.length > 0) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Some rows have validation issues',
-                errors: errors,
-            });
+            const err = new AppError(errors, 400);
+            err.sendResponse(res);
+            return ;
         }
-        await Staff.collection(staffList).invokeThen('save');
+        errors = [];
+        await Promise.all(staffList.map(async staff => {
+            try {
+                await staff.save();
+            } catch (error) {
+                if (error.code === 'ER_DUP_ENTRY') {
+                   errors.push(`Staff Already Exists: ${staff.name} (${staff.email})`);
+                } else {
+                    errors.push(error.message);
+                }
+            }
+        }));
         const rolesArr = Array.from(roleObjsMap.keys());
         const roleObjs = await Promise.all(rolesArr.map(async (role) => await Role.where({ role_name: role }).fetch()));
         roleObjs.forEach((role) => {
@@ -344,7 +355,7 @@ exports.studentLogin = catchAsync(async (req,res, next)=>{
         if (!(await student.verifyPassword(password))) {
             res.status(400).json({
                 status: 'fail',
-                message: 'Incorrect Username or Password'
+                message: 'Incorrect Password'
             });
             return;
         }
@@ -472,6 +483,14 @@ exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
         }
     }
 })
+
+exports.staffForgotPasswordRes = catchAsync(async (req, res)=>{
+   try{
+
+   } catch(e){
+
+   }
+});
 
 exports.protect = catchAsync(async (req, res, next) => {
     let token;

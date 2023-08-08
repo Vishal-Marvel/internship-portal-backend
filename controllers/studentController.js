@@ -236,17 +236,22 @@ exports.viewStudent = catchAsync(async (req, res) => {
 });
 
 exports.getProfilePhoto = catchAsync(async (req, res) => {
-  try{
-    const file = File.where({id: req.params.id}).fetch();
-   res.send(file.get('file'));
+  try {
+    const file = await File.where({ id: req.params.id }).fetch()
+        .catch((err) =>{
+          if (err.message === "EmptyResponse"){
+            throw new AppError("Image not Found", 404);
+          }
+        });
+    const longblobData = file.get('file');
+    res.setHeader('Content-Type', 'image/jpg');
+    res.send(longblobData );
+  } catch (e) {
+    const er = new AppError(e.message, 500);
+    er.sendResponse(res);
   }
-  catch(e){
-    if (e.message === "EmptyResponse"){
-      const er = new AppError("Image Not Found", 404);
-      er.sendResponse(res);
-    }
-  }
-})
+});
+
 
 exports.viewStudentInternship = catchAsync(async (req, res) => {
 
