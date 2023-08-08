@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const Staff = require('./staffModel')
 
 const bcrypt = require('bcrypt');
+const Skill = require("./skillModel");
 
 const Student = bookshelf.model('Student', {
   tableName: 'students',
@@ -35,6 +36,9 @@ const Student = bookshelf.model('Student', {
     const password = this.get('password');
     return await bcrypt.compare(candidatePassword, password);
   },
+  skills() {
+    return this.belongsToMany(Skill, 'student_skill', 'student_id', 'skill_id');
+  },
 
 
 });
@@ -43,7 +47,7 @@ const Student = bookshelf.model('Student', {
 
 Student.findByIdAndUpdate = async function (id, updatedData) {
   try {
-    const student = await Student.where({id}).fetch();
+    const student = await Student.where({id}).fetch({ withRelated: ['skills'] });
     if (!student) {
       throw new Error('Student not found');
     }

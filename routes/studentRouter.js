@@ -2,15 +2,26 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const studentController = require('../controllers/studentController');
-
-router.post('/signup', authController.studentSignUp);
+const skillController = require('../controllers/skillController');
+const multer = require("multer");
+const upload = multer({
+    limits: {
+        fileSize: 1048576 // 1 mb
+    }
+});
+router.post('/signup',upload.single('file'), authController.studentSignUp);
 router.post('/login', authController.studentLogin);
 
 router.use(authController.protect)
-router.route('/:id')
-    .get(studentController.viewStudent)
-    .put(studentController.updateStudent)
-    .delete(studentController.deleteStudent);
-router.get('/:id/internships', studentController.viewStudentInternship);
 
+router.put('/update', authController.restrictTo('student'),upload.single('file'),  studentController.updateStudent);
+router.get('/viewStudent/:id',authController.restrictTo('hod','principal','internshipcoordinator','mentor','ceo'),studentController.viewStudent);
+router.get('/viewStudent',studentController.viewStudent);
+router.get('/:id/internships', studentController.viewStudentInternship);
+router.get('/getAllSkills', skillController.getAllSkills)
+router.get('/image/:id', studentController.getProfilePhoto)
+router.use(authController.doNotAllow('student'))
+router.route('/:id')
+    .put(studentController.updateStudentByStaff)
+    .delete(studentController.deleteStudent);
 module.exports = router;

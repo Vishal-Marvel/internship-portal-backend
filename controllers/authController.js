@@ -1,11 +1,14 @@
 const Student = require('../models/studentModel');
 const Staff = require('../models/staffModel')
 const Role = require('../models/roleModel')
+const Skill = require('../models/skillModel')
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const jwt = require("jsonwebtoken");
 const ExcelJS = require('exceljs');
-
+const File = require("../models/fileModel");
+const {sendEmail} = require("../utils/mail");
+const {savePhoto} = require("../utils/saveFiles");
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -23,7 +26,17 @@ const validateRoleAssignment = (role, data) => {
         }
     }
 };
+const generateOTP = (length) => {
+    const characters = '0123456789';
+    let otp = '';
 
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        otp += characters[randomIndex];
+    }
+
+    return otp;
+}
 // Signup function
 exports.studentSignUp = catchAsync(async (req, res) => {
 
@@ -33,12 +46,16 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             sec_sit,
             student_id,
             year_of_studying,
+            batch,
             register_num,
             department,
+            section,
             email,
             phone_no,
             password,
-            mentor_email
+            mentor_name,
+            mentor_email,
+            skills
         } = req.body;
 
         if (
@@ -46,51 +63,107 @@ exports.studentSignUp = catchAsync(async (req, res) => {
             !sec_sit ||
             !student_id ||
             !year_of_studying ||
+            !batch||
             !register_num ||
             !department ||
+            !section||
             !email ||
             !phone_no ||
             !password ||
-            !mentor_email
+            !mentor_name||
+            !mentor_email ||
+            !skills
           ) {
             throw new AppError("All fields are required", 400);
           }
 
-        const staff = await Staff.where({email:mentor_email}).fetch();
-        const staff_id = staff.id;
+        const staff = await Staff.where({email: mentor_email}).fetch()
+            .then((staff) => {
+            if (!staff) {
+                throw new AppError(`Staff with mail '${mentor_email}' not Found`, 404)
+            }
+            else{
+                return staff
+            }
+        });
+        const staff_id = staff.get('id');
+        await Student.query((qb) =>{
+            qb.where({email:email}).orWhere({student_id:student_id});
+        }).fetch().then((student)=>{
+            if (student){
+                throw new AppError("Student Already Exists", 400)
+            }
+        }).catch((err)=>{
+            if (err.message==="EmptyResponse"){}
+            else{
+                throw new AppError(err.message, 400)
+            }
+        });
+        let profile_photo = "";
+        if (req.file) {
+            const {buffer, mimetype, originalname} = req.file;
 
+            const fileName = `${student_id}_profile_photo`; // Append the unique suffix to the file name
+
+            profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
+        }
+        else{
+            const photo_file = await File.where({file_name:"default_profile_photo"}).fetch();
+            profile_photo = photo_file.get("id");
+        }
         const student = new Student({
             name,
             sec_sit,
             student_id,
             year_of_studying,
+            batch,
             register_num,
             department,
+            section,
             email,
             phone_no,
             password,
-            staff_id
+            mentor_name,
+            staff_id,
+            profile_photo
         })
+        const allSkills = await Skill.fetchAll();
+        const skillNames = allSkills.map(skill => skill.get('skill_name'));
+        const errors = [];
+        let skillArr;
+        if (! Array.isArray(skills)) {
+            skillArr = skills.split(',').map(skill => skill.trim());
+        }
+        else{
+            skillArr = skills
+        }
+
+        skillArr.forEach((skill) => {
+            if (!skillNames.includes(skill)){
+                errors.push(`${skill} skill Not Found`);
+            }
+        })
+        if (errors.length>0){
+            const err = new AppError(errors, 404);
+            err.sendResponse(res);
+            return;
+        }
         await student.save();
+        const skillObjs = await Promise.all(skillArr.map(async skill => await Skill.where({ skill_name: skill }).fetch()));
+        const skillIds = skillObjs.map(skill => skill.get('id'));
+        await student.skills().attach(skillIds);
+
         res.status(201).json({
             status: 'success',
             data: {
-                student
+                student,
+                skills
             }
         });
     } catch (err) {
-        if (err.message === "EmptyResponse"){
-            const error = new AppError("Staff Not Found", 404);
-            error.sendResponse(res);
-        }
-        else if (err.code==="ER_DUP_ENTRY"){
-            const error = new AppError("Student Already Exists", 400);
-            error.sendResponse(res);
-        }
-        else {
-            const error = new AppError(err.message, 400);
-            error.sendResponse(res);
-        }
+        // throw err
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
     }
 })
 
@@ -98,6 +171,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
 
     try {
         const {
+            faculty_id,
             name,
             department,
             email,
@@ -107,6 +181,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
         } = req.body;
 
         if (
+            !faculty_id||
             !name ||
             !email ||
             !phone_no ||
@@ -114,14 +189,40 @@ exports.staffSignup = catchAsync(async (req, res) => {
           ) {
             throw new AppError("All fields are required", 400);
           }
+        Staff.query((qb)=>{
+            qb.where({email:email}).orWhere({faculty_id: faculty_id});
+        }).fetch()
+            .then((staff)=>{
+                if (staff){
+                    throw new AppError(`Staff with mail ${email} or id ${faculty_id} already Exists`);
+                }
+            }).catch((err)=>{
+                if (err.message==="EmptyResponse"){}
+                else{
+                    throw new AppError(err.message);
+                }
+        })
+        let profile_photo;
+        if (req.file) {
+            const {buffer, mimetype, originalname} = req.file;
 
+            const fileName = `${faculty_id}_profile_photo`; // Append the unique suffix to the file name
+
+            profile_photo = await savePhoto(buffer, mimetype, fileName, originalname);
+        }
+        else{
+            const photo_file = await File.where({file_name:"default_profile_photo"}).fetch();
+            profile_photo = photo_file.get("id");
+        }
         const staff = new Staff({
+            faculty_id,
             name,
             department,
             email,
             sec_sit,
             phone_no,
-            password
+            password,
+            profile_photo
         });
         await staff.save()
 
@@ -132,44 +233,46 @@ exports.staffSignup = catchAsync(async (req, res) => {
             }
         });
     } catch (err) {
-        if (err.code==="ER_DUP_ENTRY"){
-            const error = new AppError("Staff Already Exists", 400);
-            error.sendResponse(res);
-        }
-        else {
-            const error = new AppError(err.message, 400);
-            error.sendResponse(res);
-        }
+
+        const error = new AppError(err.message, 400);
+        error.sendResponse(res);
+
     }
 })
 
-exports.staffsSignup = catchAsync(async (req, res) =>{
+exports.multipleStaffSignup = catchAsync(async (req, res) =>{
     try {
         if (!req.file) {
             const error =  new AppError('No Excel file uploaded', 400);
             error.sendResponse(res);
         }
+        
+        const photo_file = await File.where({file_name:"default_profile_photo"}).fetch();
+        const default_profile_id = photo_file.get("id");
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(req.file.buffer);
         const worksheet = workbook.getWorksheet(1);
         const staffList = [];
-        const errors = [];
+        let errors = [];
         const staffRole = new Map();
         const roleObjsMap = new Map(); // To store fetched role objects using role_name as key
 
         worksheet.eachRow(async (row, rowNumber) => {
             try {
                 if (rowNumber > 1) {
-                    const [_, name, department, email, sec_sit, phone_no, password, roles] = row.values;
+                    const [_, faculty_id, name, department, email, sec_sit, phone_no, password, roles] = row.values;
                     const staff = new Staff({
+                        faculty_id,
                         name,
                         department,
                         email,
                         sec_sit,
                         phone_no,
                         password,
+                        profile_photo : default_profile_id
                     });
                     if (
+                        !faculty_id||
                         !name ||
                         !email ||
                         !phone_no ||
@@ -196,13 +299,22 @@ exports.staffsSignup = catchAsync(async (req, res) =>{
             }
         });
         if (errors.length > 0) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Some rows have validation issues',
-                errors: errors,
-            });
+            const err = new AppError(errors, 400);
+            err.sendResponse(res);
+            return ;
         }
-        await Staff.collection(staffList).invokeThen('save');
+        errors = [];
+        await Promise.all(staffList.map(async staff => {
+            try {
+                await staff.save();
+            } catch (error) {
+                if (error.code === 'ER_DUP_ENTRY') {
+                   errors.push(`Staff Already Exists: ${staff.name} (${staff.email})`);
+                } else {
+                    errors.push(error.message);
+                }
+            }
+        }));
         const rolesArr = Array.from(roleObjsMap.keys());
         const roleObjs = await Promise.all(rolesArr.map(async (role) => await Role.where({ role_name: role }).fetch()));
         roleObjs.forEach((role) => {
@@ -243,7 +355,7 @@ exports.studentLogin = catchAsync(async (req,res, next)=>{
         if (!(await student.verifyPassword(password))) {
             res.status(400).json({
                 status: 'fail',
-                message: 'Incorrect Username or Password'
+                message: 'Incorrect Password'
             });
             return;
         }
@@ -322,9 +434,63 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             const error = new AppError("Staff Not Found", 404);
             error.sendResponse(res);
         }
-        throw err;
+        else{
+            const error = new AppError(err.message, 500);
+            error.sendResponse(res);
+        }
     }
 })
+
+exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
+    try{
+        const staffMail = req.body.email;
+        if (!staffMail) {
+            const err = new AppError("Staff email is required", 404);
+            err.sendResponse(res);
+            return;
+        }
+        const staff = await Staff.where({email: staffMail}).fetch();
+
+        const otp = generateOTP(6);
+        const otpLimit = new Date()
+        otpLimit.setHours(otpLimit.getHours() + 1);
+        console.log(otpLimit)
+        await Staff.findByIdAndUpdate(staff.get('id'),
+            {
+                OTP: otp, OTP_validity: otpLimit
+            }, {
+                new: true,
+                runValidators: true,
+                tableName: 'staffs'
+            }
+        );
+        await sendEmail(staff.get('email'), "Forgot Password Request"
+            , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
+            This is a auto generated mail. Do Not Reply`);
+        res.status(200).json({
+            status: "success",
+            message: "OTP sent"
+        })
+    }
+    catch (e){
+        if (e.message === "EmptyResponse") {
+            const error = new AppError("Staff Not Found", 404);
+            error.sendResponse(res);
+        }
+        else{
+            const error = new AppError(e.message, 500);
+            error.sendResponse(res);
+        }
+    }
+})
+
+exports.staffForgotPasswordRes = catchAsync(async (req, res)=>{
+   try{
+
+   } catch(e){
+
+   }
+});
 
 exports.protect = catchAsync(async (req, res, next) => {
     let token;
@@ -416,35 +582,6 @@ exports.removeRole = catchAsync(async (req, res)=>{
         }
     }
 })
-
-exports.assignRoles = catchAsync(async (req, res) => {
-    try {
-        const roles = req.body.roles;
-        const staff = await Staff.where({ id: req.body.id }).fetch();
-        const staffData = staff.toJSON();
-
-        const roleObjs = await Promise.all(roles.map(async role => await Role.where({ role_name: role }).fetch()));
-        const rolename = roleObjs.map(role => role.get('role_name'));
-        // Assign roles only if staff provides the required information
-        rolename.forEach((role) => {
-            validateRoleAssignment(role, staffData);
-        });
-
-        // Role assignment logic here
-
-        const roleIds = roleObjs.map(role => role.get('id')); // Extract the role IDs
-        await staff.roles().attach(roleIds);
-
-        res.status(200).json({
-            status: 'success',
-            message: `${roles.join(', ')} Assigned to ${staffData.name}`,
-        });
-    } catch (err) {
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res);
-    }
-});
-
 
 exports.restrictTo = (...roles) => {
     return (req, res, next) => {

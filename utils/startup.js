@@ -1,7 +1,8 @@
 const Role = require("../models/roleModel");
 const AppError = require("./appError");
 const Staff = require("../models/staffModel");
-
+const fs = require('fs');
+const File = require("../models/fileModel");
 exports.performStartUp = async function () {
 // Create the user
     try {
@@ -10,7 +11,7 @@ exports.performStartUp = async function () {
             role_name: "admin"
         });
         await admin.save();
-        
+
         const internshipcoordinator = new Role({
             role_name: "internshipcoordinator"
         });
@@ -37,12 +38,17 @@ exports.performStartUp = async function () {
         });
         await hod.save();
 
+        const ceo = new Role({
+            role_name: "ceo"
+        });
+        await ceo.save();
+
 
     } catch (e) {
         if (e.code === "ER_DUP_ENTRY") {
 
         } else {
-            throw new AppError(e.message, 500);
+            console.error(e.message);
         }
     }
     try {
@@ -60,8 +66,27 @@ exports.performStartUp = async function () {
     } catch (e) {
         if (e.code === "ER_DUP_ENTRY") {
         } else {
-            throw new AppError(e.message, 500);
+            console.error(e.message);
         }
+    }
+    // Path to the file on the server
+    const filePath = 'public/images/default.jpg';
+    const fileBuffer = fs.readFileSync(filePath);
+    if (!fileBuffer){
+        console.error("Error in Reading File");
+        process.exit(0)
+    }
+    const chkFile = await File.where({file_name:"default_profile_photo"}).fetch()
+        .catch((err) =>{
+            if (err.message === "EmptyResponse"){}
+        })
+    if(!chkFile){
+        const file = new File({
+            file_name: "default_profile_photo",
+            file: fileBuffer
+        })
+        await file.save();
+        console.log("profile Photo saved");
     }
 
     console.log('Startup tasks completed');

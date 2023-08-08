@@ -3,6 +3,7 @@ const Approval = require("../models/approvalModel")
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const {sendEmail} = require("../utils/mail");
+const {saveFile} = require("../utils/saveFiles");
 const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
 const File = require("../models/fileModel");
@@ -15,30 +16,6 @@ const cron = require('node-cron');
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-const saveFile = async (buffer, mimetype, fileName, originalname) => {
-    try {
-        if (mimetype !== 'application/pdf') {
-            throw new AppError('File type is invalid', 400);
-        }
-
-        const file = new File({
-            file_name: fileName,
-            file: buffer
-        });
-
-        await file.save();
-
-        return file.id;
-    }
-    catch (e){
-        if (e.code === 'ER_DATA_TOO_LONG'){
-           throw new AppError(`File ${originalname} is too large`,  400);
-        }
-        else{
-            throw new AppError(e.message,  500);
-        }
-    }
-};
 
 exports.registerInternship = catchAsync(async (req, res) => {
     try {
@@ -61,6 +38,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
             student_id // This is for internships registering by Staffs
         } = req.body;
         const approval_status = "Not Approved";
+        const internship_status = "Not Completed";
 
         if(!company_name||
            !company_address||
@@ -97,6 +75,15 @@ exports.registerInternship = catchAsync(async (req, res) => {
         else{
             if(!student_id) throw new AppError("All fields are required", 400);
         }
+        const internships = await InternshipDetails.where({ student_id: student_id }).fetchAll();
+
+        for (const internship of internships) {
+            // Access the specific detail of each internship
+            if(internship.get('internship_status') === "Not Completed"){
+                throw new AppError("Previous internship not completed", 400)
+            }
+
+        }
 
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
@@ -115,7 +102,8 @@ exports.registerInternship = catchAsync(async (req, res) => {
             location,
             domain,
             student_id,
-            approval_status
+            approval_status,
+            internship_status
         });
         const student = await Student.where({id: student_id}).fetch();
         const { buffer, mimetype, originalname } = req.file;
@@ -139,9 +127,9 @@ exports.registerInternship = catchAsync(async (req, res) => {
 
         const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
-        await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
-            , "Internship Registered by:\n " + student.get('name') + "\n\n"
-            + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+        // await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
+        //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
+        //     + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
         // Send a success response
 
@@ -183,7 +171,8 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
         await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
             attendance: attendanceId,
-            feedback: feedbackId
+            feedback: feedbackId,
+            internship_status: "Completed"
         } );
 
         res.status(201).json({
@@ -212,7 +201,7 @@ exports.canUpdate = catchAsync(async (req,res)=>{
         const internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const endingDate = internship.get('ending_date');
         endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate > new Date()){
+        if (endingDate > new Date() && req.user.roles.includes('student')){
             res.status(200).json({
                 status: 'success',
                 message: 'Internship details can be updated'
@@ -237,7 +226,7 @@ exports.updateInternship = catchAsync(async (req,res)=>{
         let internship = await InternshipDetails.where({id: req.params.id}).fetch();
         const endingDate = internship.get('ending_date');
         endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate < new Date()){
+        if (endingDate < new Date() && req.user.roles.includes('student')){
             res.status(400).json({
                 status: 'fail',
                 message: 'Internship details cant be updated'
@@ -401,6 +390,14 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 mentor_id:req.user.id,
                 mentor_approved_at:new Date()
             });
+            if (approval.get('comments_by_Role')==='mentor'){
+                approval.set({
+                    comments: null,
+                    comments_by_id: null,
+                    comments_by_Role: null,
+                    commented_at: null
+                });
+            }
             await approval.save();
 
             // const staffs = await Staff.where(
@@ -441,6 +438,14 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 internshipcoordinator: true,
                 internshipcoordinator_id:req.user.id,
                 internshipcoordinator_approved_at:new Date()});
+            if (approval.get('comments_by_Role')==='internshipcoordinator'){
+                approval.set({
+                    comments: null,
+                    comments_by_id: null,
+                    comments_by_Role: null,
+                    commented_at: null
+                });
+            }
             await approval.save();
             const staffs = await Staff.query((qb) => {
                 qb.where({
@@ -472,7 +477,14 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 hod: true,
                 hod_id:req.user.id,
                 hod_approved_at:new Date()});
-            await approval.save();
+            if (approval.get('comments_by_Role')==='hod'){
+                approval.set({
+                    comments: null,
+                    comments_by_id: null,
+                    comments_by_Role: null,
+                    commented_at: null
+                });
+            }await approval.save();
 
             const staffs = await Staff.query((qb) => {qb
                 .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
@@ -501,7 +513,14 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 tapcell: true,
                 tapcell_id:req.user.id,
                 tapcell_approved_at:new Date()});
-            await approval.save();
+            if (approval.get('comments_by_Role')==='tapcell'){
+                approval.set({
+                    comments: null,
+                    comments_by_id: null,
+                    comments_by_Role: null,
+                    commented_at: null
+                });
+            }await approval.save();
 
             const staffs = await Staff.query((qb) => {
                 qb.where({
@@ -531,7 +550,14 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 principal: true,
                 principal_id:req.user.id,
                 principal_approved_at:new Date()});
-            await approval.save();
+            if (approval.get('comments_by_Role')==='principal'){
+                approval.set({
+                    comments: null,
+                    comments_by_id: null,
+                    comments_by_Role: null,
+                    commented_at: null
+                });
+            }await approval.save();
             await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
             student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
@@ -624,7 +650,10 @@ exports.reject = catchAsync(async (req,res)=>{
             comments_by_Role: req.user.role,
             commented_at: new Date()
         })
-        internship.set({approval_status:"rejected"})
+        internship.set({
+            approval_status:"rejected",
+            internship_status: "Rejected"
+        })
         await internship.save();
         await approval.save()
         res.status(200).json({

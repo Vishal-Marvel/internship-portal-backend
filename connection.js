@@ -16,9 +16,13 @@ const createStaffsTable = async () => {
                     table.string('department');
                     table.string('sec_sit');
                     table.date('registered_date');
+                    table.string('faculty_id').unique();
                     table.string('email');
                     table.string('phone_no');
                     table.string('password');
+                    table.string('profile_photo');
+                    table.integer('OTP');
+                    table.date('OTP_validity');
                     table.unique(['email'])
                     console.log('Staffs table created successfully');
                 });
@@ -41,16 +45,19 @@ const createStudentsTable = async () => {
                     table.string('sec_sit');
                     table.string('student_id').unique();
                     table.integer('year_of_studying');
+                    table.integer('batch');
                     table.date('registered_date');
                     table.string('register_num');
                     table.string('department');
+                    table.string('section');
                     table.string('email').unique();
                     table.string('phone_no');
                     table.string('password');
                     table.integer('total_days_internship');
                     table.boolean('placement_status');
                     table.string('placed_company');
-                    // table.string('skills');
+                    table.string('profile_photo');
+                    table.string('mentor_name');
                     table.string('staff_id'); // Add staff_id column for the foreign key
                     table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
                     console.log('Students table created successfully');
@@ -90,6 +97,7 @@ const createInternshipTable = async () => {
                     table.string('feedback');
                     table.string('offer_letter');
                     table.string('approval_status');
+                    table.string('internship_status');
                     table.string('student_id').references('students.id').onDelete('CASCADE');
                     console.log('Internship table created successfully');
                 });
@@ -176,6 +184,43 @@ const createStaffRoleTable = async () => {
     }
 };
 
+const createSkillsTable = async () => {
+    try {
+        await knex.schema.hasTable("skills").then(exists =>{
+            if (!exists){
+                return knex.schema.createTable('skills', table=>{
+                    table.string('id').primary();
+                    table.string('skill_name').unique();
+                    console.log('Skills table created successfully');
+                })
+            }
+        })
+
+
+    } catch (error) {
+        console.error('Error creating skills table:', error);
+    }
+};
+
+const createStudentSkillTable = async () => {
+    try {
+        await knex.schema.hasTable("student_skill").then(exists =>{
+            if (!exists){
+                return knex.schema.createTable('student_skill', table=>{
+                    table.string('student_id').references('students.id').onDelete('CASCADE');
+                    table.string('skill_id').references('skills.id').onDelete('CASCADE');
+                    table.primary(['student_id', 'skill_id']);
+                    console.log('Student Skills table created successfully');
+                })
+            }
+        })
+
+
+    } catch (error) {
+        console.error('Error creating studentskill table:', error);
+    }
+};
+
 knex.schema.hasTable("files").then(exists =>{
     if (!exists){
         return knex.schema.createTable('files', table=>{
@@ -183,6 +228,8 @@ knex.schema.hasTable("files").then(exists =>{
             table.string('file_name');
             table.specificType('file', 'longblob');
             table.date('uploaded_at');
+
+            
         })
     }
 })
@@ -191,12 +238,17 @@ createStaffsTable().then(
     r => createRolesTable().then(
         r => createStaffRoleTable().then(
             r=>createStudentsTable().then(
-                r=>createInternshipTable().then(
-                    r=>createApprovalTable().then(
-                        async e => {
-                            const startup = require('./utils/startup');
-                            await startup.performStartUp();
-                        }
+                r=>createSkillsTable().then(
+                    r=>createStudentSkillTable().then(
+                        r=>createInternshipTable().then(
+                            r=>createApprovalTable().then(
+                                async e => {
+                                    const startup = require('./utils/startup');
+                                    await startup.performStartUp();
+                                }
+                            
+                            )
+                        )
                     )
                 )
             )

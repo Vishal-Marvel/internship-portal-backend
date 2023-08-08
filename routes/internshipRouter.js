@@ -25,7 +25,7 @@ router.route('/:id')
         {name: 'feedback'},
         {name: 'offer_letter'}
     ]), internship.updateInternship)
-    .delete(internship.deleteInternship)
+    .delete(authController.doNotAllow('student'), internship.deleteInternship)
 router.get('/can-update/:id', internship.canUpdate);
 router.get('/approval-status/:id', internship.getApprovalStatus);
 router.get('/download-report/:id', internship.downloadReport);
@@ -35,5 +35,5 @@ router.use(authController.doNotAllow('student')); // Restricting Students
 router.post('/approval/:role/:id', internship.approveInternship);
 router.post('/send-back/:role/:id', internship.sendBack);
 router.post('/reject/:role/:id', internship.reject);
-router.get('/all', internship.viewInternships);
+router.get('/view/all', internship.viewInternships);
 module.exports = router;
