@@ -26,10 +26,12 @@ exports.registerInternship = catchAsync(async (req, res) => {
             company_address,
             company_ph_no,
             current_cgpa,
-            sin_tin_gst_no,
+            cin_gst_udyog,
+            cin_gst_udyog_no,
             academic_year,
             industry_supervisor_name,
             industry_supervisor_ph_no,
+            industry_supervisor_email,
             mode_of_intern,
             starting_date,
             ending_date,
@@ -44,9 +46,11 @@ exports.registerInternship = catchAsync(async (req, res) => {
            !company_address||
             !company_ph_no||
             !current_cgpa||
-            !sin_tin_gst_no||
+            !cin_gst_udyog_no||
+            !cin_gst_udyog||
             !academic_year||
             !industry_supervisor_name||
+            !industry_supervisor_email||
             !industry_supervisor_ph_no||
             !mode_of_intern||
             !starting_date||
@@ -58,12 +62,12 @@ exports.registerInternship = catchAsync(async (req, res) => {
 
         const startDate = moment(starting_date);
         const endDate = moment(ending_date);
-        const days_of_internship = endDate.diff(startDate, 'days') + 1;
+        let days_of_internship = endDate.diff(startDate, 'days') + 1;
 
         //special case
         if (req.user.roles.includes("student")){
             const student = await Student.where({id:req.user.id}).fetch();
-            if (student.get('total_days_internship')+days_of_internship >45 && !student.get('placement_status') && student.get('placed_company')!==company_name){
+            if (student.get('total_days_internship')+days_of_internship >45){
                 res.status(400).json({
                     status:"failed",
                     message:"Internship Days Exceeded"
@@ -84,6 +88,9 @@ exports.registerInternship = catchAsync(async (req, res) => {
             }
 
         }
+        if (mode_of_intern === "online"){
+            days_of_internship /= 2;
+        }
 
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
@@ -91,10 +98,12 @@ exports.registerInternship = catchAsync(async (req, res) => {
             company_address,
             company_ph_no,
             current_cgpa,
-            sin_tin_gst_no,
+            cin_gst_udyog,
+            cin_gst_udyog_no,
             academic_year,
             industry_supervisor_name,
             industry_supervisor_ph_no,
+            industry_supervisor_email,
             mode_of_intern,
             starting_date,
             ending_date,
@@ -107,15 +116,13 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
         const student = await Student.where({id: student_id}).fetch();
         const { buffer, mimetype, originalname } = req.file;
-        const fileName = `${student.get('student_id')}_${company_name}_${new Date()}_offer_letter`; // Append the unique suffix to the file name
+        const fileName = `${student.get('student_id')}_${company_name}_offer_letter`;
 
         const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
 
         // Save the internship details to the database
         await internshipDetails.save();
         const id = internshipDetails.get('id');
-
-
         await internshipDetails.set({
             offer_letter
         })
@@ -125,7 +132,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
         await approval.save();
         await internshipDetails.save();
 
-        const staff = await Staff.where({id: student.get('staff_id')}).fetch();
+        // const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
         // await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
         //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
@@ -160,18 +167,18 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
         const certificateFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_certificate_of_completion`;
         const certificateId = await saveFile(certificateBuffer, certificateMimetype, certificateFileName, certificate_Original);
 
-        const { buffer: attendanceBuffer, mimetype: attendanceMimetype, originalname: attendance_Original } = attendance[0];
-        const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_attendance`;
-        const attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
+        // const { buffer: attendanceBuffer, mimetype: attendanceMimetype, originalname: attendance_Original } = attendance[0];
+        // const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_attendance`;
+        // const attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
 
-        const { buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original } = feedback[0];
-        const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_feedback`;
-        const feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
+        // const { buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original } = feedback[0];
+        // const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_feedback`;
+        // const feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
 
         await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
-            attendance: attendanceId,
-            feedback: feedbackId,
+            // attendance: attendanceId,
+            // feedback: feedbackId,
             internship_status: "Completed"
         } );
 
@@ -273,32 +280,32 @@ exports.updateInternship = catchAsync(async (req,res)=>{
                 await file.models[0].destroy();
             }
         }
-        if (attendance) {
-            const {
-                buffer: attendanceBuffer,
-                mimetype: attendanceMimetype,
-                originalname: attendance_Original
-            } = attendance[0];
-            const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_attendance`;
-            attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
-            const file = await File.where({id: internship.get('attendance')}).fetchAll();
-            if (file.length ===1) {
-                await file.models[0].destroy();
-            }
-        }
-        if (feedback) {
-            const {buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original} = feedback[0];
-            const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_feedback`;
-            feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
-            const file = await File.where({id: internship.get('feedback')}).fetchAll();
-            if (file.length ===1) {
-                await file.models[0].destroy();
-            }
-        }
+        // if (attendance) {
+        //     const {
+        //         buffer: attendanceBuffer,
+        //         mimetype: attendanceMimetype,
+        //         originalname: attendance_Original
+        //     } = attendance[0];
+        //     const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_attendance`;
+        //     attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
+        //     const file = await File.where({id: internship.get('attendance')}).fetchAll();
+        //     if (file.length ===1) {
+        //         await file.models[0].destroy();
+        //     }
+        // }
+        // if (feedback) {
+        //     const {buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original} = feedback[0];
+        //     const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_feedback`;
+        //     feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
+        //     const file = await File.where({id: internship.get('feedback')}).fetchAll();
+        //     if (file.length ===1) {
+        //         await file.models[0].destroy();
+        //     }
+        // }
         internship = await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
-            attendance: attendanceId,
-            feedback: feedbackId,
+            // attendance: attendanceId,
+            // feedback: feedbackId,
             offer_letter: offer_letterId
         } );
 

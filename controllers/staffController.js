@@ -110,11 +110,10 @@ exports.updateRole = catchAsync(async (req, res) => {
 });
 
 exports.viewRoles = catchAsync(async (req, res) => {
-    const staff = await Staff.where({ id: req.body.id }).fetch({ withRelated: ['roles'] });
+    const staff = await Staff.where({ id: req.params.id }).fetch({ withRelated: ['roles'] });
 
     // Fetch the existing roles of the staff
     const existingRoles = staff.related('roles').pluck('role_name');
-    console.log(staff)
     if (existingRoles.length ===0){
         return res.status(200).json({
             status: 'success' ,

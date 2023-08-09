@@ -530,6 +530,95 @@ exports.staffForgotPasswordRes = catchAsync(async (req, res) => {
     }
 });
 
+exports.studentForgotPasswordReq = catchAsync(async (req, res)=>{
+    try{
+        const studentMail = req.body.email;
+        if (!studentMail) {
+            const err = new AppError("Student email is required", 404);
+            err.sendResponse(res);
+            return;
+        }
+        const student = await Student.where({email: studentMail}).fetch();
+
+        const otp = generateOTP(6);
+        const otpLimit = new Date()
+        otpLimit.setHours(otpLimit.getHours() + 1);
+        console.log(otpLimit)
+        await Student.findByIdAndUpdate(student.get('id'),
+            {
+                OTP: otp, OTP_validity: otpLimit
+            }, {
+                new: true,
+                runValidators: true,
+                tableName: 'students'
+            }
+        );
+        // await sendEmail(student.get('email'), "Forgot Password Request"
+        //     , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
+        //     This is a auto generated mail. Do Not Reply`);
+        res.status(200).json({
+            status: "success",
+            message: "OTP sent"
+        })
+    }
+    catch (e){
+        if (e.message === "EmptyResponse") {
+            const error = new AppError("student Not Found", 404);
+            error.sendResponse(res);
+        }
+        else{
+            const error = new AppError(e.message, 500);
+            error.sendResponse(res);
+        }
+    }
+})
+
+exports.studentForgotPasswordRes = catchAsync(async (req, res) => {
+    try {
+        const {
+            otp,
+            email,
+            newPassword
+        } = req.body;
+
+        const student = await Student.where({ email: email }).fetch()
+            .then((student) => {
+                if (student) {
+                    return student;
+                }
+            })
+            .catch((err) => {
+                if (err.message === "EmptyResponse") {
+                    throw new AppError(`Student with mail ${email} not found`, 404);
+                }
+            });
+
+        const currentDate = new Date();
+        const otpValidity = new Date(student.get("OTP_validity"));
+
+        if (student.get('OTP') === otp && otpValidity > currentDate) {
+            student.set({
+                password: newPassword,
+                OTP: null,
+                OTP_validity: null
+            });
+
+            await student.encryptPassword();
+            await student.save();
+
+            return res.status(200).json({
+                status: "success",
+                message: "Password Changed"
+            });
+        } else {
+            throw new AppError(`Invalid OTP`);
+        }
+    } catch (e) {
+        const err = new AppError(e.message, 400);
+        err.sendResponse(res);
+    }
+});
+
 
 exports.protect = catchAsync(async (req, res, next) => {
     let token;

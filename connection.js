@@ -54,10 +54,11 @@ const createStudentsTable = async () => {
                     table.string('phone_no');
                     table.string('password');
                     table.integer('total_days_internship');
+                    table.integer('OTP');
+                    table.date('OTP_validity');
                     table.boolean('placement_status');
                     table.string('placed_company');
                     table.string('profile_photo');
-                    table.string('mentor_name');
                     table.string('staff_id'); // Add staff_id column for the foreign key
                     table.foreign('staff_id').references('staffs.id'); // Add foreign key constraint
                     console.log('Students table created successfully');
@@ -82,10 +83,12 @@ const createInternshipTable = async () => {
                     table.string('company_address');
                     table.string('company_ph_no');
                     table.string('current_cgpa');
-                    table.string('sin_tin_gst_no');
+                    table.string('cin_gst_udyog_no');
+                    table.string('cin_gst_udyog');
                     table.string('academic_year');
                     table.string('industry_supervisor_name');
                     table.string('industry_supervisor_ph_no');
+                    table.string('industry_supervisor_email');
                     table.string('mode_of_intern');
                     table.date('starting_date');
                     table.date('ending_date');
@@ -93,8 +96,8 @@ const createInternshipTable = async () => {
                     table.string('location');
                     table.string('domain');
                     table.string('certificate');
-                    table.string('attendance');
-                    table.string('feedback');
+                    // table.string('attendance');
+                    // table.string('feedback');
                     table.string('offer_letter');
                     table.string('approval_status');
                     table.string('internship_status');
@@ -230,6 +233,24 @@ knex.schema.hasTable("files").then(exists =>{
             table.date('uploaded_at');
 
             
+        })
+    }
+})
+
+knex.schema.hasTable("industry_details").then(exists =>{
+    if (!exists){
+        return knex.schema.createTable('industry_details', table=>{
+            table.string('id').primary();
+            table.string('company_name');
+            table.string('company_address');
+            table.string('company_ph_no');
+            table.string('cin_tin_gst_no');
+            table.string('industry_supervisor_name');
+            table.string('industry_supervisor_ph_no');
+            table.string('industry_supervisor_email');
+            table.date('added_at');
+
+
         })
     }
 })

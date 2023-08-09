@@ -7,32 +7,35 @@ const multer = require('multer');
 // Create an instance of multer for handling file uploads
 const upload = multer({
     limits: {
-        fileSize: 1048576 // 1 mb
+        fileSize: 524288 // 512 kb
     }
 });
-router.post('/signup', authController.staffSignup);
+router.post('/signup', upload.single('file'), authController.staffSignup);
 router.post('/login', authController.staffLogin);
 router.post('/forgot-password', authController.staffForgotPasswordReq);
 router.post('/set-forgot-password', authController.staffForgotPasswordRes);
 
 router.use(authController.protect);
 router.use(authController.doNotAllow("student"));
-router.get('/mentee-students',authController.restrictTo('mentor'), staffController.viewMenteeStudents);
+router.get('/mentee-students', authController.restrictTo('mentor'), staffController.viewMenteeStudents);
 router.get('/:id/mentee-students', staffController.viewMenteeStudents);
-router.put('/update', upload.single('file'),  staffController.updateStaff)
-router.route('/:id')
-    .put(authController.restrictTo('hod', 'admin', 'principal'),upload.single('file'),  staffController.updateStaff)
-    .delete(authController.restrictTo('hod', 'admin', 'principal'), staffController.deleteStaff)
-router.get('/viewStaff/:id',authController.restrictTo('hod','principal','ceo'),staffController.viewStaff);
-router.get('/viewStaff',staffController.viewStaff);//for same logged in staff
-router.get('/viewMultipleStaff',authController.restrictTo('hod','principal','ceo'), staffController.viewMultipleStaff);
-router.get('/viewMultipleStudent',authController.restrictTo('hod','principal','ceo', "tapcell", "intershipcoordinator"),staffController.viewMultipleStudent);
-router.use(authController.restrictTo("hod", "admin")); // router.use(authController.restrictTo(staffUpdateRoles));
+router.put('/update', upload.single('file'), staffController.updateStaff)
+router.get('/viewMultipleStudent', staffController.viewMultipleStudent);
+router.get('/viewStaff', staffController.viewStaff);//for same logged in staff
+router.get('/viewAllRoles', staffController.getAllRoles);
+
+router.use(authController.restrictTo("hod", "principal", "ceo", "admin"));
 router.post('/updateRole', staffController.updateRole);
-router.get('/viewRoles', staffController.viewRoles);
+router.get('/viewStaffRoles/:id', staffController.viewRoles);
 router.post('/updateMentees', staffController.migrateMentees);
-router.post('/addStaffs', upload.single('file'),  authController.multipleStaffSignup);
-router.use(authController.restrictTo("hod", "admin", "tapcell", "principal", "ceo"));
+router.get('/viewMultipleStaff', staffController.viewMultipleStaff);
+router.get('/viewStaff/:id', staffController.viewStaff);
+router.post('/addStaffs', upload.single('file'), authController.multipleStaffSignup);
+router.route('/:id')
+    .put(upload.single('file'), staffController.updateStaff)
+    .delete(staffController.deleteStaff)
+
+router.use(authController.restrictTo("hod", "tapcell", "principal", "ceo", "admin"));
 router.post('/skill/addSkill', skillController.addSkill)
 router.delete('/skill/deleteSkill', skillController.deleteSkill)
 module.exports = router;
