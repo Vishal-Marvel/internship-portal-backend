@@ -408,21 +408,21 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             //     const roles = staff.related('roles').pluck('role_name');
             //     return roles.includes('internshipcoordinator');
             //   });
-            const staffs = await Staff.query((qb) => {
-                qb.where({
-                  department: student.get('department'),
-                  sec_sit: student.get('sec_sit')
-                }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                  .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'internshipcoordinator');
-              }).fetchAll();
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
-            }
+            // const staffs = await Staff.query((qb) => {
+            //     qb.where({
+            //       department: student.get('department'),
+            //       sec_sit: student.get('sec_sit')
+            //     }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //       .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //       .where('roles.role_name', 'internshipcoordinator');
+            //   }).fetchAll();
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
             res.status(200).json({
                 status: "success",
                 message: "Mentor - approved",
@@ -447,21 +447,21 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 });
             }
             await approval.save();
-            const staffs = await Staff.query((qb) => {
-                qb.where({
-                  department: student.get('department'),
-                  sec_sit: student.get('sec_sit')
-                }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                  .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'hod');
-              }).fetchAll();
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
-            }
+            // const staffs = await Staff.query((qb) => {
+            //     qb.where({
+            //       department: student.get('department'),
+            //       sec_sit: student.get('sec_sit')
+            //     }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //       .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //       .where('roles.role_name', 'hod');
+            //   }).fetchAll();
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
             res.status(200).json({
                 status: "success",
                 message: "Internship Coordinator - approved",
@@ -486,86 +486,90 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 });
             }await approval.save();
 
-            const staffs = await Staff.query((qb) => {qb
-                .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                .where('roles.role_name', 'tapcell');
-            }).fetchAll();
-
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
-            }
+            // const staffs = await Staff.query((qb) => {qb
+            //     .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //     .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //     .where('roles.role_name', 'tapcell');
+            // }).fetchAll();
+            //
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
             res.status(200).json({
                 status: "success",
                 message: "HOD - approved",
             });
         } else if (req.params.role === "tapcell" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod")) {
-            if (approval.get('tapcell')===1){
+            if (approval.get('tapcell') === 1) {
                 const error = new AppError("tapcell already Approved", 400);
                 error.sendResponse(res);
                 return;
             }
             approval.set({
                 tapcell: true,
-                tapcell_id:req.user.id,
-                tapcell_approved_at:new Date()});
-            if (approval.get('comments_by_Role')==='tapcell'){
+                tapcell_id: req.user.id,
+                tapcell_approved_at: new Date()
+            });
+            if (approval.get('comments_by_Role') === 'tapcell') {
                 approval.set({
                     comments: null,
                     comments_by_id: null,
                     comments_by_Role: null,
                     commented_at: null
                 });
-            }await approval.save();
-
-            const staffs = await Staff.query((qb) => {
-                qb.where({
-                  sec_sit: student.get('sec_sit')
-                }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                  .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'principal');
-              }).fetchAll();
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
             }
+            await approval.save();
+
+            // const staffs = await Staff.query((qb) => {
+            //     qb.where({
+            //       sec_sit: student.get('sec_sit')
+            //     }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //       .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //       .where('roles.role_name', 'principal');
+            //   }).fetchAll();
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
             res.status(200).json({
                 status: "success",
                 message: "Tap Cell - approved",
             });
         } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod") && approval.get("tapcell")) {
-            if (approval.get('principal')===1){
+            if (approval.get('principal') === 1) {
                 const error = new AppError("Principal already Approved", 400);
                 error.sendResponse(res);
                 return;
             }
             approval.set({
                 principal: true,
-                principal_id:req.user.id,
-                principal_approved_at:new Date()});
-            if (approval.get('comments_by_Role')==='principal'){
+                principal_id: req.user.id,
+                principal_approved_at: new Date()
+            });
+            if (approval.get('comments_by_Role') === 'principal') {
                 approval.set({
                     comments: null,
                     comments_by_id: null,
                     comments_by_Role: null,
                     commented_at: null
                 });
-            }await approval.save();
+            }
+            await approval.save();
             await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
-            student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
+                student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             res.status(200).json({
                 status: "success",
                 message: "Principal - approved",
             });
-            internship.set({approval_status:"Approved"})
+            internship.set({approval_status: "Approved"})
             await internship.save();
         } else {
             res.status(400).json({
@@ -573,8 +577,6 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 message: "You cant approve the internship right now",
             });
         }
-        // const internship = await InternshipDetails.where({id:req.params.id}).fetch();
-        // const student = await Student.where({id:internship.get('student_id')}).fetch();
     }
     catch (err){
         // Handle any errors that occur during the process
