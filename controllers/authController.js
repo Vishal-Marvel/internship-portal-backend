@@ -486,9 +486,44 @@ exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
 
 exports.staffForgotPasswordRes = catchAsync(async (req, res)=>{
    try{
+        const {
+            otp,
+            email,
+            newPassword
+        }= req.body;
+        const staff = await Staff.where({email: email}).fetch()
+            .then((staff)=>{
+                if (staff){
+                    return staff;
+                }
+            })
+            .catch((err)=>{
+                if (err.message === "EmptyResponse"){
+                    throw new AppError(`Staff with mail ${email} not found`, 404);
+                }
+            });
+        const currentDate = new Date();
+       const timeDifferenceMs = staff.get("OTP_validity") - currentDate;
+       const timeDifferenceMinutes = timeDifferenceMs / (1000 * 60);
+        if (staff.get('OTP') === otp && staff.get('OTP_validity')>new Date()){
+            staff.set({
+                password: newPassword
+            })
+            await staff.encryptPassword()
+            return res.status(200).json({
+                status: "success",
+                message: "Password Changed"
+            })
+        }else{
+            console.log(timeDifferenceMinutes)
+            throw new AppError(`Invalid OTP`)
+        }
+
 
    } catch(e){
 
+        const err = new AppError(e.message, 400);
+        err.sendResponse(res);
    }
 });
 

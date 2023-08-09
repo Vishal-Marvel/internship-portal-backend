@@ -244,7 +244,7 @@ exports.getProfilePhoto = catchAsync(async (req, res) => {
           }
         });
     const longblobData = file.get('file');
-    res.setHeader('Content-Type', 'image/jpg');
+    res.setHeader('Content-Type', 'image');
     res.send(longblobData );
   } catch (e) {
     const er = new AppError(e.message, 500);
