@@ -15,7 +15,7 @@ const createStaffsTable = async () => {
                     table.string('name');
                     table.string('department');
                     table.string('sec_sit');
-                    table.date('registered_date');
+                    table.dateTime('registered_date');
                     table.string('faculty_id').unique();
                     table.string('email');
                     table.string('phone_no');

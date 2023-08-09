@@ -403,7 +403,7 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
         if (!(await staff.verifyPassword(password))) {
             res.status(400).json({
                 status: 'fail',
-                message: 'Incorrect Username or Password'
+                message: 'Incorrect Password'
             });
             return;
         }
@@ -464,9 +464,9 @@ exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
                 tableName: 'staffs'
             }
         );
-        await sendEmail(staff.get('email'), "Forgot Password Request"
-            , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
-            This is a auto generated mail. Do Not Reply`);
+        // await sendEmail(staff.get('email'), "Forgot Password Request"
+        //     , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
+        //     This is a auto generated mail. Do Not Reply`);
         res.status(200).json({
             status: "success",
             message: "OTP sent"
@@ -484,48 +484,52 @@ exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
     }
 })
 
-exports.staffForgotPasswordRes = catchAsync(async (req, res)=>{
-   try{
+exports.staffForgotPasswordRes = catchAsync(async (req, res) => {
+    try {
         const {
             otp,
             email,
             newPassword
-        }= req.body;
-        const staff = await Staff.where({email: email}).fetch()
-            .then((staff)=>{
-                if (staff){
+        } = req.body;
+
+        const staff = await Staff.where({ email: email }).fetch()
+            .then((staff) => {
+                if (staff) {
                     return staff;
                 }
             })
-            .catch((err)=>{
-                if (err.message === "EmptyResponse"){
+            .catch((err) => {
+                if (err.message === "EmptyResponse") {
                     throw new AppError(`Staff with mail ${email} not found`, 404);
                 }
             });
+
         const currentDate = new Date();
-       const timeDifferenceMs = staff.get("OTP_validity") - currentDate;
-       const timeDifferenceMinutes = timeDifferenceMs / (1000 * 60);
-        if (staff.get('OTP') === otp && staff.get('OTP_validity')>new Date()){
+        const otpValidity = new Date(staff.get("OTP_validity"));
+
+        if (staff.get('OTP') === otp && otpValidity > currentDate) {
             staff.set({
-                password: newPassword
-            })
-            await staff.encryptPassword()
+                password: newPassword,
+                OTP: null,
+                OTP_validity: null
+            });
+
+            await staff.encryptPassword();
+            await staff.save();
+
             return res.status(200).json({
                 status: "success",
                 message: "Password Changed"
-            })
-        }else{
-            console.log(timeDifferenceMinutes)
-            throw new AppError(`Invalid OTP`)
+            });
+        } else {
+            throw new AppError(`Invalid OTP`);
         }
-
-
-   } catch(e){
-
+    } catch (e) {
         const err = new AppError(e.message, 400);
         err.sendResponse(res);
-   }
+    }
 });
+
 
 exports.protect = catchAsync(async (req, res, next) => {
     let token;
