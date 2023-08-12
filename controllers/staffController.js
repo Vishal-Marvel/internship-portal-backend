@@ -448,4 +448,25 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
   }
 });
 
+exports.getDepartMentors = catchAsync(async (req, res)=>{
+    try{
+        const dept = req.params.dept;
+        const staffs = await Staff.where({department: dept}).fetchAll({withRelated: ["roles"]});
+        const staffNameEmail = {};
+        for (const staff of staffs) {
+            const roles = staff.related('roles').pluck('role_name');
+            if (roles.includes('mentor')) {
+                const name = staff.get('name');
+                staffNameEmail[name] = staff.get('email');
+            }
+        }
+        return res.status(200).json({
+            status:  "success",
+            data: staffNameEmail
+        })
 
+    }catch (e){
+        const err = new AppError(e.message, 500);
+        err.sendResponse(res);
+    }
+})

@@ -15,6 +15,7 @@ router.post('/forgot-password', authController.studentForgotPasswordReq);
 router.post('/set-forgot-password', authController.studentForgotPasswordRes);
 
 router.use(authController.protect)
+router.post('/change-password', authController.changePassword);
 
 router.put('/update', authController.restrictTo('student'),
     upload.single('file'),

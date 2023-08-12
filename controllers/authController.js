@@ -9,6 +9,7 @@ const ExcelJS = require('exceljs');
 const File = require("../models/fileModel");
 const {sendEmail} = require("../utils/mail");
 const {savePhoto} = require("../utils/saveFiles");
+const {apigateway} = require("googleapis/build/src/apis/apigateway");
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -619,6 +620,48 @@ exports.studentForgotPasswordRes = catchAsync(async (req, res) => {
     }
 });
 
+exports.changePassword = catchAsync(async (req, res)=> {
+    try{
+        const userId = req.user.id;
+        const {oldPassword, newPassword} = req.body;
+        let user;
+        if (req.user.roles.includes('student')) {
+            user = await Student.where({id: userId}).fetch()
+
+                .catch((err) => {
+                    if (err.message === "EmptyResponse") {
+                        throw new AppError(`Student not found`, 404);
+                    } else {
+                        throw new AppError('Error Fetching Student Details', 500);
+                    }
+                })
+        } else {
+            user = await Staff.where({id: userId}).fetch()
+                .catch((err) => {
+                    if (err.message === "EmptyResponse") {
+                        throw new AppError(`Staff not found`, 404);
+                    } else {
+                        throw new AppError('Error Fetching Staff Details', 500);
+                    }
+                })
+        }
+        if (!(await user.verifyPassword(oldPassword))) {
+            throw new AppError("Incorrect Password", 400);
+        }
+        user.set({
+            password: newPassword
+        })
+        await user.encryptPassword();
+        await user.save();
+        return res.status(200).json({
+            status: "success",
+            message: "Password Changed"
+        });
+    }catch (e){
+        const er = new AppError(e.message, 500)
+        er.sendResponse(res);
+    }
+});
 
 exports.protect = catchAsync(async (req, res, next) => {
     let token;

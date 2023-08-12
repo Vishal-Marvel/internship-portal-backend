@@ -16,6 +16,8 @@ router.post('/forgot-password', authController.staffForgotPasswordReq);
 router.post('/set-forgot-password', authController.staffForgotPasswordRes);
 
 router.use(authController.protect);
+router.get('/:dept/mentors', staffController.getDepartMentors);
+router.post('/change-password', authController.changePassword);
 router.use(authController.doNotAllow("student"));
 router.get('/mentee-students', authController.restrictTo('mentor'), staffController.viewMenteeStudents);
 router.get('/:id/mentee-students', staffController.viewMenteeStudents);
