@@ -4,6 +4,17 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const File = require("../models/fileModel");
 const {savePhoto} = require("../utils/saveFiles");
+const Staff = require('../models/staffModel');
+function unpick(object, fieldsToUnpick) {
+  const newObject = { ...object }; // Create a shallow copy of the object
+
+  for (const field of fieldsToUnpick) {
+      delete newObject[field];
+  }
+
+  return newObject;
+}
+
 
 exports.updateStudent = catchAsync(async (req, res) => {
     try {
@@ -91,10 +102,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
 
       res.status(200).json({
         status: 'success',
-        message: 'Student details and skills updated successfully',
-        data: {
-          student: updatedStudentWithSkills.toJSON(),
-        },
+        message: 'Student details and skills updated successfully'
       });
   } catch (err) {
       if (err.message === "EmptyResponse"){
@@ -141,10 +149,7 @@ exports.updateStudentByStaff = catchAsync(async (req, res) => {
 
       res.status(200).json({
         status: 'success',
-        message: 'Student details updated successfully',
-        data: {
-          student: updatedStudentWithSkills.toJSON(),
-        },
+        message: 'Student details updated successfully'
       });
   } catch (err) {
       if (err.message === "EmptyResponse"){
@@ -207,14 +212,26 @@ exports.viewStudent = catchAsync(async (req, res) => {
     }
     // Fetch the student from the database based on the studentId
     const student = await Student.where({ id: studentId }).fetch({ withRelated: 'skills' });
+    const mentor_details = await Staff.where({id:student.get("staff_id")}).fetch();
+    const mentor_name = mentor_details.get("name");
+    let unpickfields = student.toJSON();
+    if(student){
+      unpickfields = unpick(unpickfields,['registered_date','password','staff_id']);
+    }
 
+    // Transform the skills array to only include skill names
+    const transformedSkills = unpickfields.skills.map(skill => skill.skill_name);
 
     if (isStudent || isHOD || isPrincipal|| isInternshipCoordinator|| isMentor||isCeo) {
       // Return the student details
       return res.status(200).json({
         status: 'success',
         data: {
-          student,
+          student: {
+            ...unpickfields,
+            mentor_name,
+            skills: transformedSkills
+          },
         },
       });
     } else {

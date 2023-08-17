@@ -6,6 +6,15 @@ const Role = require("../models/roleModel");
 const File = require("../models/fileModel");
 const {savePhoto} = require("../utils/saveFiles");
 
+function unpick(object, fieldsToUnpick) {
+  const newObject = { ...object }; // Create a shallow copy of the object
+
+  for (const field of fieldsToUnpick) {
+      delete newObject[field];
+  }
+
+  return newObject;
+}
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -195,10 +204,7 @@ exports.updateStaff = catchAsync(async (req, res) => {
           // Send a success response
           res.status(200).json({
             status: 'success',
-            message: 'Staff details updated successfully',
-            data: {
-              staff,
-            },
+            message: 'Staff details updated successfully'
           });
       }
       catch (err) {
@@ -277,13 +283,17 @@ exports.viewStaff = catchAsync(async (req, res) => {
       return;
     }
 
+    let unpickfields = staff.toJSON();
+    if(staff){
+      unpickfields = unpick(unpickfields,['registered_date','password','OTP','OTP_validity']);
+    }
     // If the logged-in staff is the same as the staff being viewed or is higher staff, allow access
     if (staffId === loggedInStaffId || isHOD || isPrincipal) {
       // Return the staff details
       return res.status(200).json({
         status: 'success',
         data: {
-          staff,
+          staff:unpickfields,
         },
       });
     } else {
@@ -318,11 +328,27 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       return;
       }
 
+      const processedStaffs = staffs.map(async staff => {
+        // Copy student attributes to a new object
+        const processedStaff = { ...staff.attributes };
+  
+        // Exclude specific fields
+        const excludedFields = ['registered_date', 'password','OTP','OTP_validity'];
+        for (const field of excludedFields) {
+          delete processedStaff[field];
+        }
+
+        return processedStaff;
+      });
+  
+      // Wait for all student processing to complete
+      const finalProcessedStaffs = await Promise.all(processedStaffs);
+      
       // Return the staff details
       return res.status(200).json({
         status: 'success',
         data: {
-          staffs,
+          staffs:finalProcessedStaffs,
         },
       });
     } 
@@ -337,11 +363,26 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
       return;
       }
 
+      const processedStaffs = staffs.map(async staff => {
+        // Copy student attributes to a new object
+        const processedStaff = { ...staff.attributes };
+  
+        // Exclude specific fields
+        const excludedFields = ['registered_date', 'password','OTP','OTP_validity'];
+        for (const field of excludedFields) {
+          delete processedStaff[field];
+        }
+
+        return processedStaff;
+      });
+  
+      // Wait for all student processing to complete
+      const finalProcessedStaffs = await Promise.all(processedStaffs);
       // Return the staff details
       return res.status(200).json({
         status: 'success',
         data: {
-          staffs,
+          staffs:finalProcessedStaffs,
         },
       });
     } else if (isPrincipal) {
@@ -353,12 +394,26 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
         err.sendResponse(res);
         return;
       }
+      const processedStaffs = staffs.map(async staff => {
+        // Copy student attributes to a new object
+        const processedStaff = { ...staff.attributes };
+  
+        // Exclude specific fields
+        const excludedFields = ['registered_date', 'password','OTP','OTP_validity'];
+        for (const field of excludedFields) {
+          delete processedStaff[field];
+        }
 
+        return processedStaff;
+      });
+  
+      // Wait for all student processing to complete
+      const finalProcessedStaffs = await Promise.all(processedStaffs);
       // Return the staff details
       return res.status(200).json({
         status: 'success',
         data: {
-          staffs,
+          staffs:finalProcessedStaffs,
         },
       });
     } else {
@@ -392,14 +447,41 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
         err.sendResponse(res);
         return;
       }
+      
+      const processedStudents = students.map(async student => {
+      // Copy student attributes to a new object
+      const processedStudent = { ...student.attributes };
 
-      // Return the student details
-      return res.status(200).json({
-        status: 'success',
-        data: {
-          students,
-        },
-      });
+      // Exclude specific fields
+      const excludedFields = ['registered_date', 'password', 'staff_id'];
+      for (const field of excludedFields) {
+        delete processedStudent[field];
+      }
+
+      // Fetch mentor details using staff_id from the student table
+      const mentorId = student.get('staff_id');
+      const mentor = await Staff.where({ id: mentorId }).fetch();
+      processedStudent.mentor_name = mentor.get('name');
+      
+
+      // Process skills
+      processedStudent.skills = student.related('skills').map(skill => skill.get('skill_name'));
+
+      return processedStudent;
+    });
+
+    // Wait for all student processing to complete
+    const finalProcessedStudents = await Promise.all(processedStudents);
+    
+        // Return the student details
+        return res.status(200).json({
+          status: 'success',
+          data: {
+            students:finalProcessedStudents,
+          },
+        });
+      
+      
     } else if (isPrincipal) {
       // Fetch all students from the same SEC or SIT as the Principal
       const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll({ withRelated: 'skills' });
@@ -409,14 +491,40 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
         err.sendResponse(res);
         return;
       }
-
+      
+      const processedStudents = students.map(async student => {
+        // Copy student attributes to a new object
+        const processedStudent = { ...student.attributes };
+  
+        // Exclude specific fields
+        const excludedFields = ['registered_date', 'password', 'staff_id'];
+        for (const field of excludedFields) {
+          delete processedStudent[field];
+        }
+  
+        // Fetch mentor details using staff_id from the student table
+        const mentorId = student.get('staff_id');
+        const mentor = await Staff.where({ id: mentorId }).fetch();
+        processedStudent.mentor_name = mentor.get('name');
+        
+  
+        // Process skills
+        processedStudent.skills = student.related('skills').map(skill => skill.get('skill_name'));
+  
+        return processedStudent;
+      });
+  
+      // Wait for all student processing to complete
+      const finalProcessedStudents = await Promise.all(processedStudents);
+      
       // Return the student details
       return res.status(200).json({
         status: 'success',
         data: {
-          students,
+          students:finalProcessedStudents,
         },
       });
+      
     } else if (isHODOrCoordinator) {
       // Fetch all students from the same department as the HOD or Coordinator
       const department = req.user.department;
@@ -427,14 +535,40 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
       err.sendResponse(res);
       return;
       }
-
+     
+      const processedStudents = students.map(async student => {
+        // Copy student attributes to a new object
+        const processedStudent = { ...student.attributes };
+  
+        // Exclude specific fields
+        const excludedFields = ['registered_date', 'password', 'staff_id'];
+        for (const field of excludedFields) {
+          delete processedStudent[field];
+        }
+  
+        // Fetch mentor details using staff_id from the student table
+        const mentorId = student.get('staff_id');
+        const mentor = await Staff.where({ id: mentorId }).fetch();
+        processedStudent.mentor_name = mentor.get('name');
+        
+  
+        // Process skills
+        processedStudent.skills = student.related('skills').map(skill => skill.get('skill_name'));
+  
+        return processedStudent;
+      });
+  
+      // Wait for all student processing to complete
+      const finalProcessedStudents = await Promise.all(processedStudents);
+      
       // Return the student details
       return res.status(200).json({
         status: 'success',
         data: {
-          students,
+          students:finalProcessedStudents,
         },
       });
+    
     } else {
       const err= new AppError("Unauthorised access to view multiple students", 403);
       err.sendResponse(res);

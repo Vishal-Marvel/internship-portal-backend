@@ -155,11 +155,7 @@ exports.studentSignUp = catchAsync(async (req, res) => {
         await student.skills().attach(skillIds);
 
         res.status(201).json({
-            status: 'success',
-            data: {
-                student,
-                skills
-            }
+            status: 'success'
         });
     } catch (err) {
         // throw err
@@ -228,10 +224,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
         await staff.save()
 
         res.status(201).json({
-            status: 'success',
-            data:{
-                staff
-            }
+            status: 'success'
         });
     } catch (err) {
 
@@ -326,10 +319,7 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
             await staff.roles().attach(roleIds);
         }
         res.status(201).json({
-            status: 'success',
-            data: {
-                staffList,
-            },
+            status: 'success'
         });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
