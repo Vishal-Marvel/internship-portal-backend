@@ -26,7 +26,7 @@ router.get('/viewMultipleStudent', staffController.viewMultipleStudent);
 router.get('/viewStaff', staffController.viewStaff);//for same logged in staff
 router.get('/viewAllRoles', staffController.getAllRoles);
 
-router.use(authController.restrictTo("hod", "principal", "ceo", "admin"));
+router.use(authController.restrictTo("hod", "tapcell", "principal", "ceo", "admin"));
 router.post('/updateRole', staffController.updateRole);
 router.get('/viewStaffRoles/:id', staffController.viewRoles);
 router.post('/updateMentees', staffController.migrateMentees);
@@ -37,7 +37,6 @@ router.route('/:id')
     .put(upload.single('file'), staffController.updateStaff)
     .delete(staffController.deleteStaff)
 
-router.use(authController.restrictTo("hod", "tapcell", "principal", "ceo", "admin"));
 router.post('/skill/addSkill', skillController.addSkill)
 router.delete('/skill/deleteSkill', skillController.deleteSkill)
 module.exports = router;

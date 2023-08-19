@@ -12,11 +12,11 @@ const upload = multer({
 
 router.use(authController.protect);
 router.post('/register',upload.single('file'), internship.registerInternship);
-router.post('/completion-update/:id',upload.fields([
-    { name: 'certificate' },
-    // { name: 'attendance' },
-    // { name: 'feedback' },
-]), internship.uploadCompletionForm);
+// router.post('/completion-update/:id',upload.fields([
+//     { name: 'certificate' },
+//     // { name: 'attendance' },
+//     // { name: 'feedback' },
+// ]), internship.uploadCompletionForm);
 router.route('/:id')
     .get(internship.viewInternship)
     .put(upload.fields([

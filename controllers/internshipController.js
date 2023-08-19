@@ -5,11 +5,9 @@ const AppError = require('../utils/appError');
 const {sendEmail} = require("../utils/mail");
 const {saveFile} = require("../utils/saveFiles");
 const Student = require("../models/studentModel");
-const Staff = require("../models/staffModel");
 const File = require("../models/fileModel");
 const fs = require('fs');
 const {generateInternshipDetails} = require("../utils/pdfGenerator");
-const Role = require("../models/roleModel");
 const moment = require('moment');
 const cron = require('node-cron');
 
@@ -228,37 +226,14 @@ exports.viewInternships = catchAsync(async (req,res)=>{
 
 });
 
-exports.canUpdate = catchAsync(async (req,res)=>{
-    try {
-        const internship = await InternshipDetails.where({id: req.params.id}).fetch();
-        const endingDate = internship.get('ending_date');
-        endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate > new Date() && req.user.roles.includes('student')){
-            res.status(200).json({
-                status: 'success',
-                message: 'Internship details can be updated'
-            });
-        }else{
-            res.status(400).json({
-                status: 'fail',
-                message: 'Internship details cant be updated'
-            });
-        }
-    }
-    catch (err){
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res)
-    }
-});
 
 exports.updateInternship = catchAsync(async (req,res)=>{
     try {
         const internshipId = req.params.id;
         const updatedData = req.body;
         let internship = await InternshipDetails.where({id: req.params.id}).fetch();
-        const endingDate = internship.get('ending_date');
-        endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate < new Date() && req.user.roles.includes('student')){
+
+        if (internship.get('internship_status')!=="Approved" && req.user.roles.includes('student')){
             res.status(400).json({
                 status: 'fail',
                 message: 'Internship details cant be updated'
@@ -273,12 +248,12 @@ exports.updateInternship = catchAsync(async (req,res)=>{
           });
         const student = await Student.where({id: internship.get('student_id')}).fetch();
 
-        const { certificate, attendance, feedback, offer_letter } = req.files;
+        const { certificate,  offer_letter } = req.files;
         let offer_letterId, certificateId, attendanceId, feedbackId;
         offer_letterId = internship.get('offer_letter');
         certificateId = internship.get('certificate');
-        attendanceId = internship.get('attendance');
-        feedbackId = internship.get('feedback');
+        // attendanceId = internship.get('attendance');
+        // feedbackId = internship.get('feedback');
         if (offer_letter) {
             const {
                 buffer: offer_letterBuffer,
@@ -570,39 +545,42 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
             //
             // }
-            res.status(200).json({
-                status: "success",
-                message: "Tap Cell - approved",
-            });
-        } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod") && approval.get("tapcell")) {
-            if (approval.get('principal') === 1) {
-                const error = new AppError("Principal already Approved", 400);
-                error.sendResponse(res);
-                return;
-            }
-            approval.set({
-                principal: true,
-                principal_id: req.user.id,
-                principal_approved_at: new Date()
-            });
-            if (approval.get('comments_by_Role') === 'principal') {
-                approval.set({
-                    comments: null,
-                    comments_by_id: null,
-                    comments_by_Role: null,
-                    commented_at: null
-                });
-            }
-            await approval.save();
             await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
                 student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
 
             res.status(200).json({
                 status: "success",
-                message: "Principal - approved",
+                message: "Tap Cell - approved",
             });
-            internship.set({approval_status: "Approved"})
-            await internship.save();
+        // } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod") && approval.get("tapcell")) {
+        //     if (approval.get('principal') === 1) {
+        //         const error = new AppError("Principal already Approved", 400);
+        //         error.sendResponse(res);
+        //         return;
+        //     }
+        //     approval.set({
+        //         principal: true,
+        //         principal_id: req.user.id,
+        //         principal_approved_at: new Date()
+        //     });
+        //     if (approval.get('comments_by_Role') === 'principal') {
+        //         approval.set({
+        //             comments: null,
+        //             comments_by_id: null,
+        //             comments_by_Role: null,
+        //             commented_at: null
+        //         });
+        //     }
+        //     await approval.save();
+        //     await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
+        //         student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
+        //
+        //     res.status(200).json({
+        //         status: "success",
+        //         message: "Principal - approved",
+        //     });
+        //     internship.set({approval_status: "Approved"})
+        //     await internship.save();
         } else {
             res.status(400).json({
                 status: "fail",
