@@ -199,13 +199,38 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
     }
 });
 
-exports.viewInternship = catchAsync(async (req,res)=>{
+exports.viewInternship = catchAsync(async (req, res) => {
+    try {
+        const internshipId = req.params.id;
 
+        // Fetch the internship details using the provided internshipId
+        const internshipDetails = await InternshipDetails.where({ id: internshipId }).fetch();
+
+        if (!internshipDetails) {
+            throw new AppError('Internship details not found', 404);
+        }
+
+        // You can customize the response format according to your needs
+        const responseData = {
+            status: 'success',
+            message: 'Internship details retrieved successfully',
+            data: {
+                internshipDetails,
+            },
+        };
+
+        // Send the response
+        res.status(200).json(responseData);
+    } catch (err) {
+        const error = new AppError(err.message, err.statusCode || 500);
+        error.sendResponse(res);
+    }
 });
 
-exports.viewInternships = catchAsync(async (req,res)=>{
 
-});
+
+
+
 
 exports.canUpdate = catchAsync(async (req,res)=>{
     try {
