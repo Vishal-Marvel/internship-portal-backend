@@ -5,11 +5,9 @@ const AppError = require('../utils/appError');
 const {sendEmail} = require("../utils/mail");
 const {saveFile} = require("../utils/saveFiles");
 const Student = require("../models/studentModel");
-const Staff = require("../models/staffModel");
 const File = require("../models/fileModel");
 const fs = require('fs');
 const {generateInternshipDetails} = require("../utils/pdfGenerator");
-const Role = require("../models/roleModel");
 const moment = require('moment');
 const cron = require('node-cron');
 
@@ -26,10 +24,12 @@ exports.registerInternship = catchAsync(async (req, res) => {
             company_address,
             company_ph_no,
             current_cgpa,
-            sin_tin_gst_no,
+            cin_gst_udyog,
+            cin_gst_udyog_no,
             academic_year,
             industry_supervisor_name,
             industry_supervisor_ph_no,
+            industry_supervisor_email,
             mode_of_intern,
             starting_date,
             ending_date,
@@ -44,9 +44,11 @@ exports.registerInternship = catchAsync(async (req, res) => {
            !company_address||
             !company_ph_no||
             !current_cgpa||
-            !sin_tin_gst_no||
+            !cin_gst_udyog_no||
+            !cin_gst_udyog||
             !academic_year||
             !industry_supervisor_name||
+            !industry_supervisor_email||
             !industry_supervisor_ph_no||
             !mode_of_intern||
             !starting_date||
@@ -58,12 +60,12 @@ exports.registerInternship = catchAsync(async (req, res) => {
 
         const startDate = moment(starting_date);
         const endDate = moment(ending_date);
-        const days_of_internship = endDate.diff(startDate, 'days') + 1;
+        let days_of_internship = endDate.diff(startDate, 'days') + 1;
 
         //special case
         if (req.user.roles.includes("student")){
             const student = await Student.where({id:req.user.id}).fetch();
-            if (student.get('total_days_internship')+days_of_internship >45 && !student.get('placement_status') && student.get('placed_company')!==company_name){
+            if (student.get('total_days_internship')+days_of_internship >45){
                 res.status(400).json({
                     status:"failed",
                     message:"Internship Days Exceeded"
@@ -84,6 +86,9 @@ exports.registerInternship = catchAsync(async (req, res) => {
             }
 
         }
+        if (mode_of_intern === "online"){
+            days_of_internship /= 2;
+        }
 
         // Create a new instance of the InternshipDetails model
         const internshipDetails = new InternshipDetails({
@@ -91,10 +96,12 @@ exports.registerInternship = catchAsync(async (req, res) => {
             company_address,
             company_ph_no,
             current_cgpa,
-            sin_tin_gst_no,
+            cin_gst_udyog,
+            cin_gst_udyog_no,
             academic_year,
             industry_supervisor_name,
             industry_supervisor_ph_no,
+            industry_supervisor_email,
             mode_of_intern,
             starting_date,
             ending_date,
@@ -107,15 +114,13 @@ exports.registerInternship = catchAsync(async (req, res) => {
         });
         const student = await Student.where({id: student_id}).fetch();
         const { buffer, mimetype, originalname } = req.file;
-        const fileName = `${student.get('student_id')}_${company_name}_${new Date()}_offer_letter`; // Append the unique suffix to the file name
+        const fileName = `${student.get('student_id')}_${company_name}_offer_letter`;
 
         const offer_letter = await saveFile(buffer, mimetype, fileName, originalname);
 
         // Save the internship details to the database
         await internshipDetails.save();
         const id = internshipDetails.get('id');
-
-
         await internshipDetails.set({
             offer_letter
         })
@@ -125,7 +130,7 @@ exports.registerInternship = catchAsync(async (req, res) => {
         await approval.save();
         await internshipDetails.save();
 
-        const staff = await Staff.where({id: student.get('staff_id')}).fetch();
+        // const staff = await Staff.where({id: student.get('staff_id')}).fetch();
 
         // await sendEmail(staff.get('email'), "Internship Approval - " + student.get('name')
         //     , "Internship Registered by:\n " + student.get('name') + "\n\n"
@@ -160,18 +165,18 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
         const certificateFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_certificate_of_completion`;
         const certificateId = await saveFile(certificateBuffer, certificateMimetype, certificateFileName, certificate_Original);
 
-        const { buffer: attendanceBuffer, mimetype: attendanceMimetype, originalname: attendance_Original } = attendance[0];
-        const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_attendance`;
-        const attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
+        // const { buffer: attendanceBuffer, mimetype: attendanceMimetype, originalname: attendance_Original } = attendance[0];
+        // const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_attendance`;
+        // const attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
 
-        const { buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original } = feedback[0];
-        const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_feedback`;
-        const feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
+        // const { buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original } = feedback[0];
+        // const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_${new Date()}_feedback`;
+        // const feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
 
         await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
-            attendance: attendanceId,
-            feedback: feedbackId,
+            // attendance: attendanceId,
+            // feedback: feedbackId,
             internship_status: "Completed"
         } );
 
@@ -189,6 +194,31 @@ exports.uploadCompletionForm = catchAsync(async (req, res)=>{
 });
 
 exports.viewInternship = catchAsync(async (req,res)=>{
+    try {
+        const internshipId = req.params.id;
+
+        // Fetch the internship details using the provided internshipId
+        const internshipDetails = await InternshipDetails.where({ id: internshipId }).fetch();
+
+        if (!internshipDetails) {
+            throw new AppError('Internship details not found', 404);
+        }
+
+        // You can customize the response format according to your needs
+        const responseData = {
+            status: 'success',
+            message: 'Internship details retrieved successfully',
+            data: {
+                internshipDetails,
+            },
+        };
+
+        // Send the response
+        res.status(200).json(responseData);
+    } catch (err) {
+        const error = new AppError(err.message, err.statusCode || 500);
+        error.sendResponse(res);
+    }
 
 });
 
@@ -196,37 +226,14 @@ exports.viewInternships = catchAsync(async (req,res)=>{
 
 });
 
-exports.canUpdate = catchAsync(async (req,res)=>{
-    try {
-        const internship = await InternshipDetails.where({id: req.params.id}).fetch();
-        const endingDate = internship.get('ending_date');
-        endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate > new Date() && req.user.roles.includes('student')){
-            res.status(200).json({
-                status: 'success',
-                message: 'Internship details can be updated'
-            });
-        }else{
-            res.status(400).json({
-                status: 'fail',
-                message: 'Internship details cant be updated'
-            });
-        }
-    }
-    catch (err){
-        const error = new AppError(err.message, 400);
-        error.sendResponse(res)
-    }
-});
 
 exports.updateInternship = catchAsync(async (req,res)=>{
     try {
         const internshipId = req.params.id;
         const updatedData = req.body;
         let internship = await InternshipDetails.where({id: req.params.id}).fetch();
-        const endingDate = internship.get('ending_date');
-        endingDate.setDate(endingDate.getDate()+15);
-        if (endingDate < new Date() && req.user.roles.includes('student')){
+
+        if (internship.get('internship_status')!=="Approved" && req.user.roles.includes('student')){
             res.status(400).json({
                 status: 'fail',
                 message: 'Internship details cant be updated'
@@ -241,12 +248,12 @@ exports.updateInternship = catchAsync(async (req,res)=>{
           });
         const student = await Student.where({id: internship.get('student_id')}).fetch();
 
-        const { certificate, attendance, feedback, offer_letter } = req.files;
+        const { certificate,  offer_letter } = req.files;
         let offer_letterId, certificateId, attendanceId, feedbackId;
         offer_letterId = internship.get('offer_letter');
         certificateId = internship.get('certificate');
-        attendanceId = internship.get('attendance');
-        feedbackId = internship.get('feedback');
+        // attendanceId = internship.get('attendance');
+        // feedbackId = internship.get('feedback');
         if (offer_letter) {
             const {
                 buffer: offer_letterBuffer,
@@ -273,32 +280,32 @@ exports.updateInternship = catchAsync(async (req,res)=>{
                 await file.models[0].destroy();
             }
         }
-        if (attendance) {
-            const {
-                buffer: attendanceBuffer,
-                mimetype: attendanceMimetype,
-                originalname: attendance_Original
-            } = attendance[0];
-            const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_attendance`;
-            attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
-            const file = await File.where({id: internship.get('attendance')}).fetchAll();
-            if (file.length ===1) {
-                await file.models[0].destroy();
-            }
-        }
-        if (feedback) {
-            const {buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original} = feedback[0];
-            const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_feedback`;
-            feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
-            const file = await File.where({id: internship.get('feedback')}).fetchAll();
-            if (file.length ===1) {
-                await file.models[0].destroy();
-            }
-        }
+        // if (attendance) {
+        //     const {
+        //         buffer: attendanceBuffer,
+        //         mimetype: attendanceMimetype,
+        //         originalname: attendance_Original
+        //     } = attendance[0];
+        //     const attendanceFileName = `${student.get('student_id')}_${internship.get('company_name')}_attendance`;
+        //     attendanceId = await saveFile(attendanceBuffer, attendanceMimetype, attendanceFileName, attendance_Original);
+        //     const file = await File.where({id: internship.get('attendance')}).fetchAll();
+        //     if (file.length ===1) {
+        //         await file.models[0].destroy();
+        //     }
+        // }
+        // if (feedback) {
+        //     const {buffer: feedbackBuffer, mimetype: feedbackMimetype, originalname: feedback_Original} = feedback[0];
+        //     const feedbackFileName = `${student.get('student_id')}_${internship.get('company_name')}_feedback`;
+        //     feedbackId = await saveFile(feedbackBuffer, feedbackMimetype, feedbackFileName, feedback_Original);
+        //     const file = await File.where({id: internship.get('feedback')}).fetchAll();
+        //     if (file.length ===1) {
+        //         await file.models[0].destroy();
+        //     }
+        // }
         internship = await InternshipDetails.findByIdAndUpdate( req.params.id ,{
             certificate: certificateId,
-            attendance: attendanceId,
-            feedback: feedbackId,
+            // attendance: attendanceId,
+            // feedback: feedbackId,
             offer_letter: offer_letterId
         } );
 
@@ -408,21 +415,21 @@ exports.approveInternship = catchAsync(async (req,res)=>{
             //     const roles = staff.related('roles').pluck('role_name');
             //     return roles.includes('internshipcoordinator');
             //   });
-            const staffs = await Staff.query((qb) => {
-                qb.where({
-                  department: student.get('department'),
-                  sec_sit: student.get('sec_sit')
-                }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                  .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'internshipcoordinator');
-              }).fetchAll();
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
-            }
+            // const staffs = await Staff.query((qb) => {
+            //     qb.where({
+            //       department: student.get('department'),
+            //       sec_sit: student.get('sec_sit')
+            //     }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //       .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //       .where('roles.role_name', 'internshipcoordinator');
+            //   }).fetchAll();
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
             res.status(200).json({
                 status: "success",
                 message: "Mentor - approved",
@@ -447,21 +454,21 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 });
             }
             await approval.save();
-            const staffs = await Staff.query((qb) => {
-                qb.where({
-                  department: student.get('department'),
-                  sec_sit: student.get('sec_sit')
-                }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                  .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'hod');
-              }).fetchAll();
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
-            }
+            // const staffs = await Staff.query((qb) => {
+            //     qb.where({
+            //       department: student.get('department'),
+            //       sec_sit: student.get('sec_sit')
+            //     }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //       .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //       .where('roles.role_name', 'hod');
+            //   }).fetchAll();
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
             res.status(200).json({
                 status: "success",
                 message: "Internship Coordinator - approved",
@@ -486,95 +493,100 @@ exports.approveInternship = catchAsync(async (req,res)=>{
                 });
             }await approval.save();
 
-            const staffs = await Staff.query((qb) => {qb
-                .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                .where('roles.role_name', 'tapcell');
-            }).fetchAll();
-
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
-            }
+            // const staffs = await Staff.query((qb) => {qb
+            //     .innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //     .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //     .where('roles.role_name', 'tapcell');
+            // }).fetchAll();
+            //
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
             res.status(200).json({
                 status: "success",
                 message: "HOD - approved",
             });
         } else if (req.params.role === "tapcell" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod")) {
-            if (approval.get('tapcell')===1){
+            if (approval.get('tapcell') === 1) {
                 const error = new AppError("tapcell already Approved", 400);
                 error.sendResponse(res);
                 return;
             }
             approval.set({
                 tapcell: true,
-                tapcell_id:req.user.id,
-                tapcell_approved_at:new Date()});
-            if (approval.get('comments_by_Role')==='tapcell'){
+                tapcell_id: req.user.id,
+                tapcell_approved_at: new Date()
+            });
+            if (approval.get('comments_by_Role') === 'tapcell') {
                 approval.set({
                     comments: null,
                     comments_by_id: null,
                     comments_by_Role: null,
                     commented_at: null
                 });
-            }await approval.save();
-
-            const staffs = await Staff.query((qb) => {
-                qb.where({
-                  sec_sit: student.get('sec_sit')
-                }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
-                  .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
-                  .where('roles.role_name', 'principal');
-              }).fetchAll();
-            const staffEmails = staffs.map(staffMember => staffMember.get('email'));
-            for (const email of staffEmails) {
-                await sendEmail(email, "Internship Approval - " + student.get('name')
-                    , "Internship Registered by:\n " + student.get('name') + "\n\n"
-                    + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
             }
+            await approval.save();
+
+            // const staffs = await Staff.query((qb) => {
+            //     qb.where({
+            //       sec_sit: student.get('sec_sit')
+            //     }).innerJoin('staff_roles', 'staffs.id', 'staff_roles.staff_id')
+            //       .innerJoin('roles', 'staff_roles.role_id', 'roles.id')
+            //       .where('roles.role_name', 'principal');
+            //   }).fetchAll();
+            // const staffEmails = staffs.map(staffMember => staffMember.get('email'));
+            // for (const email of staffEmails) {
+            //     await sendEmail(email, "Internship Approval - " + student.get('name')
+            //         , "Internship Registered by:\n " + student.get('name') + "\n\n"
+            //         + "Approve To Proceed\n\n\n\nThis is a auto generated mail. Do Not Reply");
+            //
+            // }
+            await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
+                student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
+
             res.status(200).json({
                 status: "success",
                 message: "Tap Cell - approved",
             });
-        } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod") && approval.get("tapcell")) {
-            if (approval.get('principal')===1){
-                const error = new AppError("Principal already Approved", 400);
-                error.sendResponse(res);
-                return;
-            }
-            approval.set({
-                principal: true,
-                principal_id:req.user.id,
-                principal_approved_at:new Date()});
-            if (approval.get('comments_by_Role')==='principal'){
-                approval.set({
-                    comments: null,
-                    comments_by_id: null,
-                    comments_by_Role: null,
-                    commented_at: null
-                });
-            }await approval.save();
-            await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
-            student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
-
-            res.status(200).json({
-                status: "success",
-                message: "Principal - approved",
-            });
-            internship.set({approval_status:"Approved"})
-            await internship.save();
+        // } else if (req.params.role === "principal" && approval.get("mentor") && approval.get("internshipcoordinator") && approval.get("hod") && approval.get("tapcell")) {
+        //     if (approval.get('principal') === 1) {
+        //         const error = new AppError("Principal already Approved", 400);
+        //         error.sendResponse(res);
+        //         return;
+        //     }
+        //     approval.set({
+        //         principal: true,
+        //         principal_id: req.user.id,
+        //         principal_approved_at: new Date()
+        //     });
+        //     if (approval.get('comments_by_Role') === 'principal') {
+        //         approval.set({
+        //             comments: null,
+        //             comments_by_id: null,
+        //             comments_by_Role: null,
+        //             commented_at: null
+        //         });
+        //     }
+        //     await approval.save();
+        //     await sendEmail(student.get("email"), "Internship Approved - " + student.get('name'),
+        //         student.get('name') + " Congratulations!! Your internship is approved successfully\n\n\n\nThis is a auto generated mail. Do Not Reply");
+        //
+        //     res.status(200).json({
+        //         status: "success",
+        //         message: "Principal - approved",
+        //     });
+        //     internship.set({approval_status: "Approved"})
+        //     await internship.save();
         } else {
             res.status(400).json({
                 status: "fail",
                 message: "You cant approve the internship right now",
             });
         }
-        // const internship = await InternshipDetails.where({id:req.params.id}).fetch();
-        // const student = await Student.where({id:internship.get('student_id')}).fetch();
     }
     catch (err){
         // Handle any errors that occur during the process
@@ -709,7 +721,7 @@ exports.downloadFiles = catchAsync(async (req, res) =>{
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         res.send(fileData);
     } catch (err) {
-        const e = new AppError(err.message, 500);
+        const e = new AppError(err.message, err.statusCode || 500);
         e.sendResponse(res);
     }
 

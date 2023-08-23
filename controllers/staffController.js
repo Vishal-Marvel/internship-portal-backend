@@ -6,6 +6,15 @@ const Role = require("../models/roleModel");
 const File = require("../models/fileModel");
 const {savePhoto} = require("../utils/saveFiles");
 
+function unpick(object, fieldsToUnpick) {
+  const newObject = { ...object }; // Create a shallow copy of the object
+
+  for (const field of fieldsToUnpick) {
+      delete newObject[field];
+  }
+
+  return newObject;
+}
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -110,11 +119,10 @@ exports.updateRole = catchAsync(async (req, res) => {
 });
 
 exports.viewRoles = catchAsync(async (req, res) => {
-    const staff = await Staff.where({ id: req.body.id }).fetch({ withRelated: ['roles'] });
+    const staff = await Staff.where({ id: req.params.id }).fetch({ withRelated: ['roles'] });
 
     // Fetch the existing roles of the staff
     const existingRoles = staff.related('roles').pluck('role_name');
-    console.log(staff)
     if (existingRoles.length ===0){
         return res.status(200).json({
             status: 'success' ,
@@ -196,10 +204,7 @@ exports.updateStaff = catchAsync(async (req, res) => {
           // Send a success response
           res.status(200).json({
             status: 'success',
-            message: 'Staff details updated successfully',
-            data: {
-              staff,
-            },
+            message: 'Staff details updated successfully'
           });
       }
       catch (err) {
@@ -278,25 +283,27 @@ exports.viewStaff = catchAsync(async (req, res) => {
       return;
     }
 
+    let unPickFields = staff.toJSON();
+    if(staff){
+      unPickFields = unpick(unPickFields,['registered_date','password','OTP','OTP_validity']);
+    }
     // If the logged-in staff is the same as the staff being viewed or is higher staff, allow access
     if (staffId === loggedInStaffId || isHOD || isPrincipal) {
       // Return the staff details
       return res.status(200).json({
         status: 'success',
         data: {
-          staff,
+          staff:unPickFields,
         },
       });
     } else {
-      const err= new AppError("Unauthorised access to staff details", 403);
-      err.sendResponse(res);
-      return;
+      throw new AppError("Unauthorised access to staff details", 403);
+
     }
   } catch (err) {
     // Handle any errors that occur during the process
-    const err1= new AppError("Failed to fetch staff details", 500);
+    const err1= new AppError("Failed to fetch staff details", err.statusCode);
       err1.sendResponse(res);
-      return;
   }
 });
 
@@ -308,145 +315,151 @@ exports.viewMultipleStaff = catchAsync(async (req, res) => {
     const isHOD = loggedInStaffRole.includes('hod');
     const isPrincipal = loggedInStaffRole.includes('principal');
     const isCeo = loggedInStaffRole.includes('ceo');
-
+    let staffs;
     if (isCeo) {
       // Fetch all staff from the database
-      const staffs = await Staff.fetchAll();
+      staffs = await Staff.fetchAll();
 
-      if (!staffs || staffs.length === 0) {
-        const err= new AppError("No Staff in the database", 404);
-      err.sendResponse(res);
-      return;
-      }
-
-      // Return the staff details
-      return res.status(200).json({
-        status: 'success',
-        data: {
-          staffs,
-        },
-      });
     } 
     else if (isHOD) {
       // Fetch all staffs in the same department as the HOD
       const department = req.user.department;
-      const staffs = await Staff.where({ department:department, sec_sit:loggedInStaffSecSit }).fetchAll();
+      staffs = await Staff.where({ department:department, sec_sit:loggedInStaffSecSit }).fetchAll();
 
-      if (!staffs || staffs.length === 0) {
-        const err= new AppError("No Staff in the department", 404);
-      err.sendResponse(res);
-      return;
-      }
 
-      // Return the staff details
-      return res.status(200).json({
-        status: 'success',
-        data: {
-          staffs,
-        },
-      });
     } else if (isPrincipal) {
       // Fetch all staffs in the same SEC or SIT as the Principal
-      const staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
+      staffs = await Staff.where({ sec_sit: loggedInStaffSecSit }).fetchAll();
 
-      if (!staffs || staffs.length === 0) {
-        const err= new AppError(`No staff found in ${loggedInStaffSecSit}`, 404);
-        err.sendResponse(res);
-        return;
-      }
+
+    } else {
+      throw new AppError("Unauthorised access to view multiple staffs", 403);
+
+    }
+      const processedStaffs = staffs.map(async staff => {
+          // Copy student attributes to a new object
+          const processedStaff = { ...staff.attributes };
+
+          // Exclude specific fields
+          const excludedFields = ['registered_date', 'password','OTP','OTP_validity'];
+          for (const field of excludedFields) {
+              delete processedStaff[field];
+          }
+
+          return processedStaff;
+      });
+
+      // Wait for all student processing to complete
+      const finalProcessedStaffs = await Promise.all(processedStaffs);
 
       // Return the staff details
       return res.status(200).json({
-        status: 'success',
-        data: {
-          staffs,
-        },
+          status: 'success',
+          data: {
+              staffs:finalProcessedStaffs,
+          },
       });
-    } else {
-      const err= new AppError("Unauthorised access to view multiple staffs", 403);
-      err.sendResponse(res);
-      return;
-    }
-  } 
+  }
+
   catch (err) {
     // Handle any errors that occur during the process
-    const err1= new AppError("Failed to fetch Staff details", 500);
+    const err1= new AppError(err.message, err.statusCode);
     err1.sendResponse(res);
   }
 });
 
 exports.viewMultipleStudent = catchAsync(async (req, res) => {
-  
-  try {
-    const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
-    const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
-    const isCEOOrTapCell = loggedInStaffRole.includes('ceo') || loggedInStaffRole.includes( 'tapcell');
-    const isPrincipal = loggedInStaffRole.includes('principal');
-    const isHODOrCoordinator = loggedInStaffRole.includes('hod') || loggedInStaffRole.includes('internshipcoordinator');
 
-    if (isCEOOrTapCell) {
-      // Fetch all students from the database
-      const students = await Student.fetchAll({ withRelated: 'skills' });
+    try {
+        const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+        const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
+        const isCEOOrTapCell = loggedInStaffRole.includes('ceo') || loggedInStaffRole.includes('tapcell');
+        const isPrincipal = loggedInStaffRole.includes('principal');
+        const isHODOrCoordinator = loggedInStaffRole.includes('hod') || loggedInStaffRole.includes('internshipcoordinator');
+        let students;
+        if (isCEOOrTapCell) {
+            // Fetch all students from the database
+            students = await Student.fetchAll({withRelated: 'skills'});
 
-      if (!students || students.length === 0) {
-        const err= new AppError("No Student found in the database", 404);
-        err.sendResponse(res);
-        return;
-      }
+        } else if (isPrincipal) {
+            // Fetch all students from the same SEC or SIT as the Principal
+            students = await Student.where({sec_sit: loggedInStaffSecSit}).fetchAll({withRelated: 'skills'});
 
-      // Return the student details
-      return res.status(200).json({
-        status: 'success',
-        data: {
-          students,
-        },
-      });
-    } else if (isPrincipal) {
-      // Fetch all students from the same SEC or SIT as the Principal
-      const students = await Student.where({ sec_sit: loggedInStaffSecSit }).fetchAll({ withRelated: 'skills' });
 
-      if (!students || students.length === 0) {
-        const err= new AppError(`No Student found in ${loggedInStaffSecSit}`, 404);
-        err.sendResponse(res);
-        return;
-      }
+        } else if (isHODOrCoordinator) {
+            // Fetch all students from the same department as the HOD or Coordinator
+            const department = req.user.department;
+            students = await Student.where({
+                department: department,
+                sec_sit: loggedInStaffSecSit
+            }).fetchAll({withRelated: 'skills'});
 
-      // Return the student details
-      return res.status(200).json({
-        status: 'success',
-        data: {
-          students,
-        },
-      });
-    } else if (isHODOrCoordinator) {
-      // Fetch all students from the same department as the HOD or Coordinator
-      const department = req.user.department;
-      const students = await Student.where({ department:department ,sec_sit: loggedInStaffSecSit }).fetchAll({ withRelated: 'skills' });
+        } else {
+            throw new AppError("Unauthorised access to view multiple students", 403);
+        }
+        if (!students || students.length === 0) {
+            throw new AppError("No Student found in the database", 404);
 
-      if (!students || students.length === 0) {
-        const err= new AppError("No Student found in the department", 404);
-      err.sendResponse(res);
-      return;
-      }
+        }
 
-      // Return the student details
-      return res.status(200).json({
-        status: 'success',
-        data: {
-          students,
-        },
-      });
-    } else {
-      const err= new AppError("Unauthorised access to view multiple students", 403);
-      err.sendResponse(res);
-      return;
+        const processedStudents = students.map(async student => {
+            // Copy student attributes to a new object
+            const processedStudent = {...student.attributes};
+
+            // Exclude specific fields
+            const excludedFields = ['registered_date', 'password', 'staff_id'];
+            for (const field of excludedFields) {
+                delete processedStudent[field];
+            }
+
+            // Fetch mentor details using staff_id from the student table
+            const mentorId = student.get('staff_id');
+            const mentor = await Staff.where({id: mentorId}).fetch();
+            processedStudent.mentor_name = mentor.get('name');
+
+
+            // Process skills
+            processedStudent.skills = student.related('skills').map(skill => skill.get('skill_name'));
+
+            return processedStudent;
+        });
+
+        // Wait for all student processing to complete
+        const finalProcessedStudents = await Promise.all(processedStudents);
+
+        // Return the student details
+        return res.status(200).json({
+            status: 'success',
+            data: {
+                students: finalProcessedStudents,
+            },
+        });
+    } catch (err) {
+        // Handle any errors that occur during the process
+        const err1 = new AppError(err.message, err.statusCode);
+        err1.sendResponse(res);
     }
-  } catch (err) {
-    // Handle any errors that occur during the process
-    const err1= new AppError("Failed to fetch students details", 500);
-      err1.sendResponse(res);
-      return;
-  }
 });
 
+exports.getDepartMentors = catchAsync(async (req, res)=>{
+    try{
+        const dept = req.params.dept;
+        const staffs = await Staff.where({department: dept}).fetchAll({withRelated: ["roles"]});
+        const staffNameEmail = {};
+        for (const staff of staffs) {
+            const roles = staff.related('roles').pluck('role_name');
+            if (roles.includes('mentor')) {
+                const name = staff.get('name');
+                staffNameEmail[name] = staff.get('email');
+            }
+        }
+        return res.status(200).json({
+            status:  "success",
+            data: staffNameEmail
+        })
 
+    }catch (e){
+        const err = new AppError(e.message, 500);
+        err.sendResponse(res);
+    }
+})

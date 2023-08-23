@@ -70,7 +70,7 @@ exports.performStartUp = async function () {
         }
     }
     // Path to the file on the server
-    const filePath = 'public/images/default.jpg';
+    const filePath = 'public/images/default.png';
     const fileBuffer = fs.readFileSync(filePath);
     if (!fileBuffer){
         console.error("Error in Reading File");

@@ -12,20 +12,21 @@ const upload = multer({
 
 router.use(authController.protect);
 router.post('/register',upload.single('file'), internship.registerInternship);
-router.post('/completion-update/:id',upload.fields([
-    { name: 'certificate' },
-    { name: 'attendance' },
-    { name: 'feedback' },
-]), internship.uploadCompletionForm);
+// router.post('/completion-update/:id',upload.fields([
+//     { name: 'certificate' },
+//     // { name: 'attendance' },
+//     // { name: 'feedback' },
+// ]), internship.uploadCompletionForm);
 router.route('/:id')
     .get(internship.viewInternship)
     .put(upload.fields([
         {name: 'certificate'},
-        {name: 'attendance'},
-        {name: 'feedback'},
+        // {name: 'attendance'},
+        // {name: 'feedback'},
         {name: 'offer_letter'}
-    ]), internship.updateInternship)
+    ]),authController.doNotAllow('student'), internship.updateInternship)
     .delete(authController.doNotAllow('student'), internship.deleteInternship)
+
 router.get('/can-update/:id', internship.canUpdate);
 router.get('/approval-status/:id', internship.getApprovalStatus);
 router.get('/download-report/:id', internship.downloadReport);

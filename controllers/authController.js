@@ -9,6 +9,7 @@ const ExcelJS = require('exceljs');
 const File = require("../models/fileModel");
 const {sendEmail} = require("../utils/mail");
 const {savePhoto} = require("../utils/saveFiles");
+const {apigateway} = require("googleapis/build/src/apis/apigateway");
 
 const validateRoleAssignment = (role, data) => {
     const rolesWithDepartment = ['mentor', 'internship_coordinator','hod' ];
@@ -154,11 +155,7 @@ exports.studentSignUp = catchAsync(async (req, res) => {
         await student.skills().attach(skillIds);
 
         res.status(201).json({
-            status: 'success',
-            data: {
-                student,
-                skills
-            }
+            status: 'success'
         });
     } catch (err) {
         // throw err
@@ -227,10 +224,7 @@ exports.staffSignup = catchAsync(async (req, res) => {
         await staff.save()
 
         res.status(201).json({
-            status: 'success',
-            data:{
-                staff
-            }
+            status: 'success'
         });
     } catch (err) {
 
@@ -325,10 +319,7 @@ exports.multipleStaffSignup = catchAsync(async (req, res) =>{
             await staff.roles().attach(roleIds);
         }
         res.status(201).json({
-            status: 'success',
-            data: {
-                staffList,
-            },
+            status: 'success'
         });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -403,7 +394,7 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
         if (!(await staff.verifyPassword(password))) {
             res.status(400).json({
                 status: 'fail',
-                message: 'Incorrect Username or Password'
+                message: 'Incorrect Password'
             });
             return;
         }
@@ -464,9 +455,9 @@ exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
                 tableName: 'staffs'
             }
         );
-        await sendEmail(staff.get('email'), "Forgot Password Request"
-            , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
-            This is a auto generated mail. Do Not Reply`);
+        // await sendEmail(staff.get('email'), "Forgot Password Request"
+        //     , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
+        //     This is a auto generated mail. Do Not Reply`);
         res.status(200).json({
             status: "success",
             message: "OTP sent"
@@ -484,12 +475,182 @@ exports.staffForgotPasswordReq = catchAsync(async (req, res)=>{
     }
 })
 
-exports.staffForgotPasswordRes = catchAsync(async (req, res)=>{
-   try{
+exports.staffForgotPasswordRes = catchAsync(async (req, res) => {
+    try {
+        const {
+            otp,
+            email,
+            newPassword
+        } = req.body;
 
-   } catch(e){
+        const staff = await Staff.where({ email: email }).fetch()
+            .then((staff) => {
+                if (staff) {
+                    return staff;
+                }
+            })
+            .catch((err) => {
+                if (err.message === "EmptyResponse") {
+                    throw new AppError(`Staff with mail ${email} not found`, 404);
+                }
+            });
 
-   }
+        const currentDate = new Date();
+        const otpValidity = new Date(staff.get("OTP_validity"));
+
+        if (staff.get('OTP') === otp && otpValidity > currentDate) {
+            staff.set({
+                password: newPassword,
+                OTP: null,
+                OTP_validity: null
+            });
+
+            await staff.encryptPassword();
+            await staff.save();
+
+            return res.status(200).json({
+                status: "success",
+                message: "Password Changed"
+            });
+        } else {
+            throw new AppError(`Invalid OTP`);
+        }
+    } catch (e) {
+        const err = new AppError(e.message, 400);
+        err.sendResponse(res);
+    }
+});
+
+exports.studentForgotPasswordReq = catchAsync(async (req, res)=>{
+    try{
+        const studentMail = req.body.email;
+        if (!studentMail) {
+            const err = new AppError("Student email is required", 404);
+            err.sendResponse(res);
+            return;
+        }
+        const student = await Student.where({email: studentMail}).fetch();
+
+        const otp = generateOTP(6);
+        const otpLimit = new Date()
+        otpLimit.setHours(otpLimit.getHours() + 1);
+        console.log(otpLimit)
+        await Student.findByIdAndUpdate(student.get('id'),
+            {
+                OTP: otp, OTP_validity: otpLimit
+            }, {
+                new: true,
+                runValidators: true,
+                tableName: 'students'
+            }
+        );
+        // await sendEmail(student.get('email'), "Forgot Password Request"
+        //     , `OTP for change password is ${otp}\nValid for 1 hr\n\n\n
+        //     This is a auto generated mail. Do Not Reply`);
+        res.status(200).json({
+            status: "success",
+            message: "OTP sent"
+        })
+    }
+    catch (e){
+        if (e.message === "EmptyResponse") {
+            const error = new AppError("student Not Found", 404);
+            error.sendResponse(res);
+        }
+        else{
+            const error = new AppError(e.message, 500);
+            error.sendResponse(res);
+        }
+    }
+})
+
+exports.studentForgotPasswordRes = catchAsync(async (req, res) => {
+    try {
+        const {
+            otp,
+            email,
+            newPassword
+        } = req.body;
+
+        const student = await Student.where({ email: email }).fetch()
+            .then((student) => {
+                if (student) {
+                    return student;
+                }
+            })
+            .catch((err) => {
+                if (err.message === "EmptyResponse") {
+                    throw new AppError(`Student with mail ${email} not found`, 404);
+                }
+            });
+
+        const currentDate = new Date();
+        const otpValidity = new Date(student.get("OTP_validity"));
+
+        if (student.get('OTP') === otp && otpValidity > currentDate) {
+            student.set({
+                password: newPassword,
+                OTP: null,
+                OTP_validity: null
+            });
+
+            await student.encryptPassword();
+            await student.save();
+
+            return res.status(200).json({
+                status: "success",
+                message: "Password Changed"
+            });
+        } else {
+            throw new AppError(`Invalid OTP`);
+        }
+    } catch (e) {
+        const err = new AppError(e.message, 400);
+        err.sendResponse(res);
+    }
+});
+
+exports.changePassword = catchAsync(async (req, res)=> {
+    try{
+        const userId = req.user.id;
+        const {oldPassword, newPassword} = req.body;
+        let user;
+        if (req.user.roles.includes('student')) {
+            user = await Student.where({id: userId}).fetch()
+
+                .catch((err) => {
+                    if (err.message === "EmptyResponse") {
+                        throw new AppError(`Student not found`, 404);
+                    } else {
+                        throw new AppError('Error Fetching Student Details', 500);
+                    }
+                })
+        } else {
+            user = await Staff.where({id: userId}).fetch()
+                .catch((err) => {
+                    if (err.message === "EmptyResponse") {
+                        throw new AppError(`Staff not found`, 404);
+                    } else {
+                        throw new AppError('Error Fetching Staff Details', 500);
+                    }
+                })
+        }
+        if (!(await user.verifyPassword(oldPassword))) {
+            throw new AppError("Incorrect Password", 400);
+        }
+        user.set({
+            password: newPassword
+        })
+        await user.encryptPassword();
+        await user.save();
+        return res.status(200).json({
+            status: "success",
+            message: "Password Changed"
+        });
+    }catch (e){
+        const er = new AppError(e.message, 500)
+        er.sendResponse(res);
+    }
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
