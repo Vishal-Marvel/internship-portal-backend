@@ -224,6 +224,26 @@ const createStudentSkillTable = async () => {
     }
 };
 
+const createNotificationTable = async () => {
+    try{
+        await knex.schema.hasTable("notification").then(exists =>{
+            if(!exists){
+                return knex.schema.createTable('notification', table =>{
+                    table.increments('id').primary();
+                    table.string('message').notNullable();
+                    table.string('faculty_id').unsigned().references('id').inTable('staffs'); 
+                    table.string('batch').notNullable();
+                    table.string('department').notNullable();
+                    table.timestamps(true, true);
+                })
+            }
+        })
+    }
+    catch(error){
+        console.error('Error creating notification table:',error);
+    }
+};
+
 knex.schema.hasTable("files").then(exists =>{
     if (!exists){
         return knex.schema.createTable('files', table=>{
@@ -263,10 +283,12 @@ createStaffsTable().then(
                     r=>createStudentSkillTable().then(
                         r=>createInternshipTable().then(
                             r=>createApprovalTable().then(
-                                async e => {
-                                    const startup = require('./utils/startup');
-                                    await startup.performStartUp();
-                                }
+                                r=>createNotificationTable().then(
+                                    async e => {
+                                        const startup = require('./utils/startup');
+                                        await startup.performStartUp();
+                                    }
+                                )
                             
                             )
                         )

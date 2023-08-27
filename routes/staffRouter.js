@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const staffController = require('../controllers/staffController');
 const skillController = require('../controllers/skillController');
+const { createNotification} = require('../controllers/notificationController');
 const multer = require('multer');
 // Create an instance of multer for handling file uploads
 const upload = multer({
@@ -39,4 +40,6 @@ router.route('/:id')
 
 router.post('/skill/addSkill', skillController.addSkill)
 router.delete('/skill/deleteSkill', skillController.deleteSkill)
+router.post('/create', createNotification);
+
 module.exports = router;
