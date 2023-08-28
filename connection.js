@@ -229,12 +229,11 @@ const createNotificationTable = async () => {
         await knex.schema.hasTable("notification").then(exists =>{
             if(!exists){
                 return knex.schema.createTable('notification', table =>{
-                    table.increments('id').primary();
+                    table.string('id').primary();
                     table.string('message').notNullable();
-                    table.string('faculty_id').unsigned().references('id').inTable('staffs'); 
+                    table.string('faculty_id').references('staffs.id').onDelete('CASCADE');
                     table.string('batch').notNullable();
                     table.string('department').notNullable();
-                    table.timestamps(true, true);
                 })
             }
         })

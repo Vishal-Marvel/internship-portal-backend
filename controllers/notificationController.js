@@ -1,6 +1,8 @@
 const Notification = require('../models/notificationModel');
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
-exports.createNotification = async (req, res) => {
+exports.createNotification = catchAsync( async (req, res) => {
   try {
     const { message, batch, department } = req.body;
     const facultyId = req.user.id; // Assuming you have user authentication and you get faculty ID from user
@@ -19,14 +21,15 @@ exports.createNotification = async (req, res) => {
       },
     });
   } catch (err) {
+    console.log(err)
     res.status(500).json({
       status: 'error',
       message: 'Failed to create notification',
     });
   }
-};
+});
 
-exports.viewNotifications = async (req, res) => {
+exports.viewNotifications = catchAsync (async (req, res) => {
   try {
     const studentBatch = req.user.batch; // Assuming you have user authentication and you get student batch from user
     const studentDepartment = req.user.department; // Assuming you have user authentication and you get student department from user
@@ -48,4 +51,4 @@ exports.viewNotifications = async (req, res) => {
       message: 'Failed to fetch notifications',
     });
   }
-};
+});

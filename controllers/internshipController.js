@@ -233,7 +233,7 @@ exports.updateInternship = catchAsync(async (req,res)=>{
         const updatedData = req.body;
         let internship = await InternshipDetails.where({id: req.params.id}).fetch();
 
-        if (internship.get('internship_status')!=="Approved" && req.user.roles.includes('student')){
+        if (internship.get('internship_status')==="Approved" && req.user.roles.includes('student')){
             res.status(400).json({
                 status: 'fail',
                 message: 'Internship details cant be updated'

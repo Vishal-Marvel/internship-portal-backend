@@ -27,7 +27,6 @@ router.route('/:id')
     ]),authController.doNotAllow('student'), internship.updateInternship)
     .delete(authController.doNotAllow('student'), internship.deleteInternship)
 
-router.get('/can-update/:id', internship.canUpdate);
 router.get('/approval-status/:id', internship.getApprovalStatus);
 router.get('/download-report/:id', internship.downloadReport);
 router.get('/download-file/:id', internship.downloadFiles);
