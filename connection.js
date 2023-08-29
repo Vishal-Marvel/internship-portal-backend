@@ -232,8 +232,6 @@ const createNotificationTable = async () => {
                     table.string('id').primary();
                     table.string('message').notNullable();
                     table.string('faculty_id').references('staffs.id').onDelete('CASCADE');
-                    table.string('batch').notNullable();
-                    table.string('department').notNullable();
                 })
             }
         })

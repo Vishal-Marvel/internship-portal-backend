@@ -1,6 +1,7 @@
 const Notification = require('../models/notificationModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const Staff = require('../models/staffModel');
 
 exports.createNotification = catchAsync( async (req, res) => {
   try {
@@ -9,8 +10,6 @@ exports.createNotification = catchAsync( async (req, res) => {
 
     const notification = await Notification.forge({
       message,
-      batch,
-      department,
       faculty_id: facultyId,
     }).save();
 
@@ -21,7 +20,6 @@ exports.createNotification = catchAsync( async (req, res) => {
       },
     });
   } catch (err) {
-    console.log(err)
     res.status(500).json({
       status: 'error',
       message: 'Failed to create notification',
@@ -29,23 +27,28 @@ exports.createNotification = catchAsync( async (req, res) => {
   }
 });
 
-exports.viewNotifications = catchAsync (async (req, res) => {
+exports.viewNotifications = catchAsync(async (req, res) => {
   try {
-    const studentBatch = req.user.batch; // Assuming you have user authentication and you get student batch from user
-    const studentDepartment = req.user.department; // Assuming you have user authentication and you get student department from user
 
-    const notifications = await Notification.where({
-      batch: studentBatch,
-      department: studentDepartment,
-    }).fetchAll();
+    const notifications = await Notification.fetchAll();
+    const notificationsWithStaffNames = [];
 
+    for (const notification of notifications.models){
+    const message = notification.get("message");
+    const staff_id = notification.get("faculty_id");
+    const staff = await Staff.where({id:staff_id}).fetch();
+    const staff_name = staff.get("name");
+
+    notificationsWithStaffNames.push({ message, staff_name });
+    }
     res.status(200).json({
       status: 'success',
       data: {
-        notifications,
+        notification: notificationsWithStaffNames,
       },
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch notifications',

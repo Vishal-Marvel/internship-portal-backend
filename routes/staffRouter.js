@@ -26,6 +26,7 @@ router.put('/update', upload.single('file'), staffController.updateStaff)
 router.get('/viewMultipleStudent', staffController.viewMultipleStudent);
 router.get('/viewStaff', staffController.viewStaff);//for same logged in staff
 router.get('/viewAllRoles', staffController.getAllRoles);
+router.post('/create', notificationController.createNotification);
 
 router.use(authController.restrictTo("hod", "tapcell", "principal", "ceo", "admin"));
 router.post('/updateRole', staffController.updateRole);
@@ -40,6 +41,5 @@ router.route('/:id')
 
 router.post('/skill/addSkill', skillController.addSkill)
 router.delete('/skill/deleteSkill', skillController.deleteSkill)
-router.post('/create', notificationController.createNotification);
 
 module.exports = router;
