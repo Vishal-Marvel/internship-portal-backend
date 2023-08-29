@@ -27,6 +27,7 @@ router.get('/viewMultipleStudent', staffController.viewMultipleStudent);
 router.get('/viewStaff', staffController.viewStaff);//for same logged in staff
 router.get('/viewAllRoles', staffController.getAllRoles);
 router.post('/create', notificationController.createNotification);
+router.put('/update-notification',notificationController.updateNotifications);
 
 router.use(authController.restrictTo("hod", "tapcell", "principal", "ceo", "admin"));
 router.post('/updateRole', staffController.updateRole);

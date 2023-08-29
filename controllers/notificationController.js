@@ -5,7 +5,7 @@ const Staff = require('../models/staffModel');
 
 exports.createNotification = catchAsync( async (req, res) => {
   try {
-    const { message, batch, department } = req.body;
+    const { message} = req.body;
     const facultyId = req.user.id; // Assuming you have user authentication and you get faculty ID from user
 
     const notification = await Notification.forge({
@@ -53,4 +53,52 @@ exports.viewNotifications = catchAsync(async (req, res) => {
       message: 'Failed to fetch notifications',
     });
   }
+});
+
+exports.updateNotifications = catchAsync(async(req,res) =>{
+    try{
+        const facultyId = req.user.id;
+        const notifications = await Notification.where({faculty_id:facultyId}).fetchAll();
+        if (!notifications|| notifications.length === 0) {
+            // If the staff with the provided ID is not found, return an error response
+            return res.status(404).json({
+              status: 'fail',
+              message: 'Not Notification found for the faculty',
+            });
+          }
+        const {message}= req.body;
+
+        const updatedData = {
+            message,
+        };
+        const updatedNotifications = [];
+        for (const notification of notifications.models) {
+          const updatedNotification = await Notification.findByIdAndUpdate(notification.get('id'), updatedData, {
+            new: true,
+            runValidators: true,
+            tableName: 'notification',
+          });
+          updatedNotifications.push(updatedNotification);
+        }
+          res.status(200).json({
+            status: 'success',
+            message: ' Notification updated successfully',
+            result: updatedNotifications,
+          });
+    }
+    catch(err){
+        console.error(err);
+        // res.status(500).json({
+        //     status: 'error',
+        //     message: 'Failed to update notifications',
+        //   });
+        if (err.message === "EmptyResponse"){
+            const error = new AppError("Notification Not Found", 404);
+            error.sendResponse(res);
+        }
+        else {
+            const error = new AppError(err.message, 500);
+            error.sendResponse(res);
+        }
+    }
 });
