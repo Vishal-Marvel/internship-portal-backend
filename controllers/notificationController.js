@@ -58,12 +58,13 @@ exports.viewNotifications = catchAsync(async (req, res) => {
 exports.updateNotifications = catchAsync(async(req,res) =>{
     try{
         const facultyId = req.user.id;
+        const id = req.params.id;
         const notifications = await Notification.where({faculty_id:facultyId}).fetchAll();
         if (!notifications|| notifications.length === 0) {
             // If the staff with the provided ID is not found, return an error response
             return res.status(404).json({
               status: 'fail',
-              message: 'Not Notification found for the faculty',
+              message: 'No Notification found for the faculty',
             });
           }
         const {message}= req.body;
@@ -71,15 +72,11 @@ exports.updateNotifications = catchAsync(async(req,res) =>{
         const updatedData = {
             message,
         };
-        const updatedNotifications = [];
-        for (const notification of notifications.models) {
-          const updatedNotification = await Notification.findByIdAndUpdate(notification.get('id'), updatedData, {
-            new: true,
-            runValidators: true,
-            tableName: 'notification',
+        const updatedNotifications = await Notification.findByIdAndUpdate(id, updatedData, {
+            new: true, // Return the updated document
+            runValidators: true, // Run the validation on the updated fields
+            tableName: 'notification' // Specify the table name
           });
-          updatedNotifications.push(updatedNotification);
-        }
           res.status(200).json({
             status: 'success',
             message: ' Notification updated successfully',

@@ -28,7 +28,7 @@ router.get('/viewStudent',studentController.viewStudent);
 router.get('/internships', studentController.viewStudentInternship);
 router.get('/getAllSkills', skillController.getAllSkills)
 router.get('/image/:id', studentController.getProfilePhoto)
-router.get('/view', viewNotifications)
+router.get('/view-notification', viewNotifications)
 router.use(authController.doNotAllow('student'))
 router.route('/:id')
     .put(studentController.updateStudentByStaff)
