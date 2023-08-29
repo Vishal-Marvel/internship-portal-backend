@@ -48,7 +48,6 @@ exports.viewNotifications = catchAsync(async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch notifications',
