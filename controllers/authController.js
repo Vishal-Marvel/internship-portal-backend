@@ -402,8 +402,8 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
         }
         const userRoles = staff.related('roles');
         const roles = userRoles.map(role=>role.get('role_name'))
-
-        const token = jwt.sign({id: staff.get('id'), roles: roles}, process.env.JWT_SECRET, {
+        const clg="fac";
+        const token = jwt.sign({id: staff.get('id'), roles: roles,clg:clg}, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRESIN
         });
 
@@ -411,7 +411,7 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             expires: new Date(Date.now() + process.env.COOKIE_EXPIRESIN * 60 * 60 * 1000),
             httpOnly: true
         };
-        const clg="fac";
+        
 
         res.cookie('jwt', token, cookieOptions);
 
