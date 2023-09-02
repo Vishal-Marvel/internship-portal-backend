@@ -13,7 +13,7 @@ const app = require('./app');
 
 
 // Schedule the cron job for automatic deletion
-const automaticDeletionJob = new CronJob('10 12 * * *', async () => {
+const automaticDeletionJob = new CronJob('0 0 * * *', async () => {
   try {
     const oneMonthAgo = moment().subtract(1, 'months').format('YYYY-MM-DD HH:mm:ss');
     const notificationsToDelete = await Notification.where('created_at', '<', oneMonthAgo).fetchAll();
