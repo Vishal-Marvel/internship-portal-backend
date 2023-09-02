@@ -411,7 +411,7 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             expires: new Date(Date.now() + process.env.COOKIE_EXPIRESIN * 60 * 60 * 1000),
             httpOnly: true
         };
-
+        const clg="fac";
 
         res.cookie('jwt', token, cookieOptions);
 
@@ -419,7 +419,8 @@ exports.staffLogin = catchAsync(async (req,res, next)=>{
             status: 'success',
             data: {
                 token,
-                roles
+                roles,
+                clg
             }
         });
     } catch (err) {
