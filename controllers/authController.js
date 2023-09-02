@@ -351,7 +351,8 @@ exports.studentLogin = catchAsync(async (req,res, next)=>{
             return;
         }
         const roles = ["student"];
-        const token = jwt.sign({id: student.get('id'), roles: roles}, process.env.JWT_SECRET, {
+        const  clg = student.get('sec_sit');
+        const token = jwt.sign({id: student.get('id'), roles: roles, clg:clg}, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRESIN
         });
 
@@ -366,7 +367,8 @@ exports.studentLogin = catchAsync(async (req,res, next)=>{
             status: 'success',
             data: {
                 token,
-                roles
+                roles,
+                clg
             }
         });
     } catch (err) {
