@@ -17,9 +17,13 @@ const automaticDeletionJob = new CronJob('0 0 * * *', async () => {
   try {
     const oneMonthAgo = moment().subtract(1, 'months').format('YYYY-MM-DD HH:mm:ss');
     const notificationsToDelete = await Notification.where('created_at', '<', oneMonthAgo).fetchAll();
+    if (notificationsToDelete.length === 0) {
+      console.log('No notifications found to delete.');
+    }
+    else{
     await notificationsToDelete.invokeThen('destroy');
-    
     console.log(`${notificationsToDelete.length} notifications deleted.`);
+    }
   } catch (err) {
     console.error('Failed to delete notifications:', err);
   }
