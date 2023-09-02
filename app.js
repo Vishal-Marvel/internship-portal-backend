@@ -12,6 +12,7 @@ const internshipRouter = require('./routes/internshipRouter');
 const adminRouter = require('./routes/adminRouter');
 const app = express();
 
+
 app.enable('trust proxy');
 
 // Parser JSON

@@ -28,6 +28,7 @@ router.get('/viewStaff', staffController.viewStaff);//for same logged in staff
 router.get('/viewAllRoles', staffController.getAllRoles);
 router.post('/create', notificationController.createNotification);
 router.put('/update-notification/:id',notificationController.updateNotifications);
+router.delete('/delete-notification/:id',notificationController.deleteNotification);
 
 router.use(authController.restrictTo("hod", "tapcell", "principal", "ceo", "admin"));
 router.post('/updateRole', staffController.updateRole);

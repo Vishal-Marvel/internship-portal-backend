@@ -7,9 +7,12 @@ const Notification = bookshelf.model('Notification', {
   initialize: function (){
     this.on('creating', this.setId);
   },
+
   setId:async function(){
     const uuid = uuidv4(null, null, null);
     this.set('id', uuid.toString());
+    this.set('created_at',new Date());
+    this.set('updated_at',new Date());
   },
   faculty() {
     return this.belongsTo(Staff, 'staff_id'); 
@@ -30,9 +33,9 @@ Notification.findByIdAndUpdate = async function (id, updatedData) {
   }
 };
 
-Notification.findByIdAndDelete = async function (id) {
+Notification.findByIdAndDelete = async function (id,facultyId) {
   try {
-    const notification = await Notification.where({id}).fetch();
+    const notification = await Notification.where({id,faculty_id: facultyId}).fetch();
     if (!notification) {
       throw new Error('Notification not found');
     }

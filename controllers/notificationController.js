@@ -3,6 +3,7 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Staff = require('../models/staffModel');
 
+
 exports.createNotification = catchAsync( async (req, res) => {
   try {
     const { message} = req.body;
@@ -20,6 +21,7 @@ exports.createNotification = catchAsync( async (req, res) => {
       },
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create notification',
@@ -99,3 +101,53 @@ exports.updateNotifications = catchAsync(async(req,res) =>{
         }
     }
 });
+
+exports.deleteNotification = catchAsync(async (req,res)=> {
+  try {
+      const msg_id = req.params.id;
+      const facultyId= req.user.id;
+
+      // Find the internship in the database based on the provided ID
+      await Notification.findByIdAndDelete(msg_id, facultyId);
+
+      // Send a success response
+      res.status(200).json({
+          status: 'success',
+          message: 'Notification deleted successfully',
+
+      });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete the notification.',
+    });
+  }
+
+});
+
+
+// // Schedule a job to run daily
+// schedule.scheduleJob('0 0 * * *', async () => {
+//   try {
+//     // Calculate the date 1 month ago
+//     const oneMonthAgo = new Date();
+//     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+//     // Fetch notifications older than 1 month
+//     const notificationsToDelete = await Notification.where('created_at', '<', oneMonthAgo).fetchAll();
+
+//     // Delete the fetched notifications
+//     for (const notification of notificationsToDelete.models) {
+//       await notification.destroy();
+//     }
+
+//     console.log('Automatic deletion of notifications completed.');
+//   } catch (err) {
+//     console.error('Error during automatic deletion:', err);
+//   }
+// });
+
+
+
+
