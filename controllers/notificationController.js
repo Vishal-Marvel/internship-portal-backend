@@ -2,13 +2,15 @@ const Notification = require('../models/notificationModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Staff = require('../models/staffModel');
+const Student = require('../models/studentModel');
 
 
 exports.createNotification = catchAsync(async (req, res) => {
     try {
-        const {message, year, departments} = req.body;
+        let {message, year, departments} = req.body;
         const facultyId = req.user.id; // Assuming you have user authentication and you get faculty ID from user
-        const role = req.user.roles;
+        const role = req.user.roles.toString();
+        departments = departments.toString();
 
         const notification = await Notification.forge({
             message,
@@ -25,7 +27,7 @@ exports.createNotification = catchAsync(async (req, res) => {
             },
         });
     } catch (err) {
-        console.error(err);
+        // console.error(err);
         res.status(500).json({
             status: 'error',
             message: 'Failed to create notification',
@@ -65,14 +67,16 @@ exports.viewNotifications = catchAsync(async (req, res) => {
 
 exports.viewStudentNotifications = catchAsync(async (req, res) => {
     try {
-        const year = req.user.year;
+        const studentId = req.user.id;
+        const student = await Student.where({'id': studentId}).fetch();
+        const year = student.get('year_of_studying');
         const department = req.user.department;
         const notifications = await Notification.where({'year': year}).fetchAll();
         const notificationsWithList = [];
 
         for (const notification of notifications.models) {
             const departments = notification.get('departments').split(',').map(department => department.trim());
-            if (!departments.includes(department)){
+            if (!departments.includes(department)) {
                 continue;
             }
             const message = notification.get("message");
@@ -90,6 +94,7 @@ exports.viewStudentNotifications = catchAsync(async (req, res) => {
             },
         });
     } catch (err) {
+        console.log(err)
         res.status(500).json({
             status: 'error',
             message: 'Failed to fetch notifications',
@@ -110,10 +115,10 @@ exports.updateNotifications = catchAsync(async (req, res) => {
             });
         }
         const {message} = req.body;
-        const date = new  Date();
+        const date = new Date();
 
         const updatedData = {
-            message,date
+            message, date
         };
         const updatedNotifications = await Notification.findByIdAndUpdate(id, updatedData, {
             new: true, // Return the updated document
