@@ -18,15 +18,16 @@ router.post('/set-forgot-password', authController.staffForgotPasswordRes);
 
 router.use(authController.protect);
 router.get('/:dept/mentors', staffController.getDepartMentors);
-router.post('/change-password', authController.changePassword);
 router.use(authController.doNotAllow("student"));
+router.post('/change-password', authController.changePassword);
 router.get('/mentee-students', authController.restrictTo('mentor'), staffController.viewMenteeStudents);
 router.get('/:id/mentee-students', staffController.viewMenteeStudents);
 router.put('/update', upload.single('file'), staffController.updateStaff)
 router.get('/viewMultipleStudent', staffController.viewMultipleStudent);
 router.get('/viewStaff', staffController.viewStaff);//for same logged in staff
 router.get('/viewAllRoles', staffController.getAllRoles);
-router.post('/create', notificationController.createNotification);
+router.get('/view-notifications', notificationController.viewNotifications);
+router.post('/create-notification', notificationController.createNotification);
 router.put('/update-notification/:id',notificationController.updateNotifications);
 router.delete('/delete-notification/:id',notificationController.deleteNotification);
 

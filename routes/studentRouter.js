@@ -3,7 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const studentController = require('../controllers/studentController');
 const skillController = require('../controllers/skillController');
-const { viewNotifications }= require('../controllers/notificationController');
+const notificationController = require('../controllers/notificationController');
 const multer = require("multer");
 const upload = multer({
     limits: {
@@ -25,10 +25,10 @@ router.get('/viewStudent/:id',
     authController.restrictTo('hod', 'principal', 'internshipcoordinator', 'mentor', 'ceo'),
     studentController.viewStudent);
 router.get('/viewStudent',studentController.viewStudent);
-router.get('/internships', studentController.viewStudentInternship);
+router.get('/internships', studentController.viewStudentInternship)
 router.get('/getAllSkills', skillController.getAllSkills)
 router.get('/image/:id', studentController.getProfilePhoto)
-router.get('/view-notification', viewNotifications)
+router.get('/student-notifications', notificationController.viewStudentNotifications)
 router.use(authController.doNotAllow('student'))
 router.route('/:id')
     .put(studentController.updateStudentByStaff)

@@ -85,7 +85,7 @@ const createInternshipTable = async () => {
                     table.string('current_cgpa');
                     table.string('cin_gst_udyog_no');
                     table.string('cin_gst_udyog');
-                    table.string('academic_year');
+                    table.integer('academic_year');
                     table.string('industry_supervisor_name');
                     table.string('industry_supervisor_ph_no');
                     table.string('industry_supervisor_email');
@@ -231,7 +231,10 @@ const createNotificationTable = async () => {
                 return knex.schema.createTable('notification', table =>{
                     table.string('id').primary();
                     table.string('message').notNullable();
+                    table.string('departments').notNullable();
+                    table.integer('year');
                     table.string('faculty_id').references('staffs.id').onDelete('CASCADE');
+                    table.string('role');
                     table.date('created_at');
                     table.date('updated_at');
                 })
