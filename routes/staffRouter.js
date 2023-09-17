@@ -15,7 +15,6 @@ router.post('/signup', upload.single('file'), authController.staffSignup);
 router.post('/login', authController.staffLogin);
 router.post('/forgot-password', authController.staffForgotPasswordReq);
 router.post('/set-forgot-password', authController.staffForgotPasswordRes);
-
 router.use(authController.protect);
 router.get('/:dept/mentors', staffController.getDepartMentors);
 router.use(authController.doNotAllow("student"));
