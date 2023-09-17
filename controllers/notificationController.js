@@ -114,11 +114,11 @@ exports.updateNotifications = catchAsync(async (req, res) => {
                 message: 'No Notification found for the faculty',
             });
         }
-        const {message} = req.body;
-        const date = new Date();
+        const {message,departments} = req.body;
+        const updated_at = new  Date();
 
         const updatedData = {
-            message, date
+            message,updated_at,departments
         };
         const updatedNotifications = await Notification.findByIdAndUpdate(id, updatedData, {
             new: true, // Return the updated document
