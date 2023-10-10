@@ -6,11 +6,28 @@ const Staff = require('../models/staffModel');
 
 exports.createNotification = catchAsync( async (req, res) => {
   try {
-    const { message} = req.body;
+    let{
+      message,
+      type,
+      branch,
+      batch
+    }=req.body;
+
+    if(
+      !message||
+      !branch||
+      !batch||
+      !type){
+        throw new AppError("All fields are required", 400);
+      }
+
     const facultyId = req.user.id; // Assuming you have user authentication and you get faculty ID from user
 
     const notification = await Notification.forge({
       message,
+      type,
+      branch,
+      batch,
       faculty_id: facultyId,
     }).save();
 
