@@ -201,7 +201,12 @@ exports.viewInternship = catchAsync(async (req,res)=>{
         const internshipDetails = await InternshipDetails.where({ id: internshipId }).fetch();
 
         if (!internshipDetails) {
-            throw new AppError('Internship details not found', 404);
+            // throw new AppError('Internship details not found', 404);
+            res.status(404).json({
+                status: 'fail',
+                message: 'Internship details not found'
+            });
+            return;
         }
 
         // You can customize the response format according to your needs

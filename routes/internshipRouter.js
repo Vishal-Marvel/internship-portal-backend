@@ -18,7 +18,7 @@ router.post('/register',upload.single('file'), internship.registerInternship);
 //     // { name: 'feedback' },
 // ]), internship.uploadCompletionForm);
 router.route('/:id')
-    .get(internship.viewInternship)
+    .get(authController.doNotAllow('student'),internship.viewInternship)
     .put(upload.fields([
         {name: 'certificate'},
         // {name: 'attendance'},
