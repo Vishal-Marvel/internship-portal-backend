@@ -228,7 +228,54 @@ exports.viewInternship = catchAsync(async (req,res)=>{
 });
 
 exports.viewInternships = catchAsync(async (req,res)=>{
+    try {
+        const loggedInStaffRole = req.user.roles; // Role of the logged-in staff member
+        const loggedInStaffSecSit = req.user.sec_sit; // SEC or SIT value for the logged-in staff
+        const isCEOOrTapCell = loggedInStaffRole.includes('ceo') || loggedInStaffRole.includes('tapcell');
+        const isPrincipal = loggedInStaffRole.includes('principal');
+        const isHODOrCoordinator = loggedInStaffRole.includes('hod') || loggedInStaffRole.includes('internshipcoordinator');
+        let students,studentIds,internships;
+        if (isCEOOrTapCell) {
+            // Fetch all students internships from the database
+            students = await Student.fetchAll();
+            studentIds = students.map(student => student.get('id'));
+            internships = await InternshipDetails.where('student_id', 'IN', studentIds).fetchAll();
+        } else if (isPrincipal) {
+            // Fetch all students internships from the same SEC or SIT as the Principal
+            students = await Student.where({sec_sit: loggedInStaffSecSit}).fetchAll();
+            studentIds = students.map(student => student.get('id'));
+            internships = await InternshipDetails.where('student_id', 'IN', studentIds).fetchAll();
 
+        } else if (isHODOrCoordinator) {
+            // Fetch all studentsinternship from the same department as the HOD or Coordinator
+            const department = req.user.department;
+            students = await Student.where({
+                department: department,
+                sec_sit: loggedInStaffSecSit
+            }).fetchAll();
+            studentIds = students.map(student => student.get('id'));
+            internships = await InternshipDetails.where('student_id', 'IN', studentIds).fetchAll();
+
+        } else {
+            throw new AppError("Unauthorised access to view internships", 403);
+        }
+        if (!internships || internships.length === 0) {
+            throw new AppError("No Internship found in the database", 404);
+
+        }
+ 
+        // Return the student internship details
+        return res.status(200).json({
+            status: 'success',
+            data: {
+                internships,
+            },
+        });
+    } catch (err) {
+        // Handle any errors that occur during the process
+        const err1 = new AppError(err.message, err.statusCode||500);
+        err1.sendResponse(res);
+    }
 });
 
 

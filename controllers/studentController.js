@@ -5,6 +5,7 @@ const AppError = require('../utils/appError');
 const File = require("../models/fileModel");
 const {savePhoto} = require("../utils/saveFiles");
 const Staff = require('../models/staffModel');
+const InternshipDetails= require('../models/internshipModel');
 function unpick(object, fieldsToUnpick) {
   const newObject = { ...object }; // Create a shallow copy of the object
 
@@ -271,6 +272,36 @@ exports.getProfilePhoto = catchAsync(async (req, res) => {
 
 
 exports.viewStudentInternship = catchAsync(async (req, res) => {
+  try {
+    const studentid = req.user.id;
+
+    // Fetch the internship details using the provided internshipId
+    const internshipDetails = await InternshipDetails.where({ student_id: studentid }).fetchAll();
+
+    if (!internshipDetails) {
+        // throw new AppError('Internship details not found', 404);
+        res.status(404).json({
+            status: 'fail',
+            message: 'Internship details not found'
+        });
+        return;
+    }
+
+    // You can customize the response format according to your needs
+    const responseData = {
+        status: 'success',
+        message: 'Internship details retrieved successfully',
+        data: {
+            internshipDetails,
+        },
+    };
+
+    // Send the response
+    res.status(200).json(responseData);
+} catch (err) {
+    const error = new AppError(err.message, err.statusCode || 500);
+    error.sendResponse(res);
+}
 
 });
 
