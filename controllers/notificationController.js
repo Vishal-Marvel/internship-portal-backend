@@ -22,6 +22,8 @@ exports.createNotification = catchAsync( async (req, res) => {
       !role){
         throw new AppError("All fields are required", 400);
       }
+      
+      departments = departments.toString();
 
     const facultyId = req.user.id; // Assuming you have user authentication and you get faculty ID from user
 
