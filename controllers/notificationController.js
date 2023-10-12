@@ -9,15 +9,17 @@ exports.createNotification = catchAsync( async (req, res) => {
     let{
       message,
       type,
-      branch,
-      batch
+      departments,
+      year,
+      role,
     }=req.body;
 
     if(
       !message||
-      !branch||
-      !batch||
-      !type){
+      !departments||
+      !year||
+      !type||
+      !role){
         throw new AppError("All fields are required", 400);
       }
 
@@ -26,8 +28,9 @@ exports.createNotification = catchAsync( async (req, res) => {
     const notification = await Notification.forge({
       message,
       type,
-      branch,
-      batch,
+      departments,
+      year,
+      role,
       faculty_id: facultyId,
     }).save();
 
