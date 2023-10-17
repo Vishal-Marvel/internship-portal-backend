@@ -2,7 +2,7 @@ const Notification = require('../models/notificationModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Staff = require('../models/staffModel');
-
+const Student = require('../models/studentModel');
 
 exports.createNotification = catchAsync( async (req, res) => {
   try {
@@ -53,36 +53,71 @@ exports.createNotification = catchAsync( async (req, res) => {
 
 exports.viewNotifications = catchAsync(async (req, res) => {
   try {
+    const studentId = req.user.id;
+    const student = await Student.where({'id': studentId}).fetch();
+    const year = student.get('year_of_studying');
+    const department = req.user.department;
+    const notifications = await Notification.where({'year': year}).fetchAll();
+    const notificationsWithList = [];
 
-    const notifications = await Notification.fetchAll();
-    const notificationsWithStaffNames = [];
+    for (const notification of notifications.models) {
+        const departments = notification.get('departments').split(',').map(department => department.trim());
+        if (!departments.includes(department)) {
+            continue;
+        }
+        const message = notification.get("message");
+        const staff_id = notification.get("faculty_id");
+        const staff = await Staff.where({id: staff_id}).fetch();
+        const staff_name = staff.get("name");
+        const date = notification.get('updated_at')
 
-    for (const notification of notifications.models){
-    const message = notification.get("message");
-    const staff_id = notification.get("faculty_id");
-    const staff = await Staff.where({id:staff_id}).fetch();
-    const staff_name = staff.get("name");
-
-    notificationsWithStaffNames.push({ message, staff_name });
+        notificationsWithList.push({message, staff_name, date});
     }
     res.status(200).json({
-      status: 'success',
-      data: {
-        notification: notificationsWithStaffNames,
-      },
+        status: 'success',
+        data: {
+            notification: notificationsWithList,
+        },
     });
-  } catch (err) {
+} catch (err) {
+    console.log(err)
     res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch notifications',
+        status: 'error',
+        message: 'Failed to fetch notifications',
     });
-  }
+}
+  // try {
+
+  //   const notifications = await Notification.fetchAll();
+  //   const notificationsWithStaffNames = [];
+
+  //   for (const notification of notifications.models){
+  //   const message = notification.get("message");
+  //   const staff_id = notification.get("faculty_id");
+  //   const staff = await Staff.where({id:staff_id}).fetch();
+  //   const staff_name = staff.get("name");
+
+  //   notificationsWithStaffNames.push({ message, staff_name });
+  //   }
+  //   res.status(200).json({
+  //     status: 'success',
+  //     data: {
+  //       notification: notificationsWithStaffNames,
+  //     },
+  //   });
+  // } catch (err) {
+  //   res.status(500).json({
+  //     status: 'error',
+  //     message: 'Failed to fetch notifications',
+  //   });
+  // }
 });
 
 exports.updateNotifications = catchAsync(async(req,res) =>{
     try{
         const facultyId = req.user.id;
         const id = req.params.id;
+        const {message,role}= req.body;
         const notifications = await Notification.where({faculty_id:facultyId}).fetchAll();
         if (!notifications|| notifications.length === 0) {
             // If the staff with the provided ID is not found, return an error response
@@ -91,7 +126,7 @@ exports.updateNotifications = catchAsync(async(req,res) =>{
               message: 'No Notification found for the faculty',
             });
           }
-        const {message}= req.body;
+        
 
         const updatedData = {
             message,

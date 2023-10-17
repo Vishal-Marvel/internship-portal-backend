@@ -234,6 +234,8 @@ exports.viewInternships = catchAsync(async (req,res)=>{
         const isCEOOrTapCell = loggedInStaffRole.includes('ceo') || loggedInStaffRole.includes('tapcell');
         const isPrincipal = loggedInStaffRole.includes('principal');
         const isHODOrCoordinator = loggedInStaffRole.includes('hod') || loggedInStaffRole.includes('internshipcoordinator');
+        const mentor = loggedInStaffRole.includes('mentor');
+        const staffid=req.user.id;
         let students,studentIds,internships;
         if (isCEOOrTapCell) {
             // Fetch all students internships from the database
@@ -256,7 +258,12 @@ exports.viewInternships = catchAsync(async (req,res)=>{
             studentIds = students.map(student => student.get('id'));
             internships = await InternshipDetails.where('student_id', 'IN', studentIds).fetchAll();
 
-        } else {
+        } else if(mentor){
+            students= await Student.where({staff_id:staffid}).fetchAll();
+            studentIds = students.map(student => student.get('id'));
+            internships = await InternshipDetails.where('student_id','IN',studentIds).fetchAll();
+        }
+         else {
             throw new AppError("Unauthorised access to view internships", 403);
         }
         if (!internships || internships.length === 0) {
