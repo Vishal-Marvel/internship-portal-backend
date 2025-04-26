@@ -90,6 +90,42 @@ exports.performStartUp = async function () {
             console.error(e.message);
         }
     }
+    try {
+        const role = await Role.where({role_name: "tapcell"}).fetch();
+        const chkFile = await File.where({file_name:"default_profile_photo"}).fetch()
+        const tapcell = new Staff({
+            name: "TAPCELL",
+            email: "tapcell@sairam.edu.in",
+            password: "Sairam@123",
+            profile_photo: chkFile.get("id")
+        });
+        await tapcell.save();
+        await tapcell.roles().attach(role);
+
+    } catch (e) {
+        if (e.code === "ER_DUP_ENTRY") {
+        } else {
+            console.error(e.message);
+        }
+    }
+    try {
+        const role = await Role.where({role_name: "ceo"}).fetch();
+        const chkFile = await File.where({file_name:"default_profile_photo"}).fetch()
+        const ceo = new Staff({
+            name: "CEO",
+            email: "ceo@sairam.edu.in",
+            password: "Sairam@123",
+            profile_photo: chkFile.get("id")
+        });
+        await ceo.save();
+        await ceo.roles().attach(role);
+
+    } catch (e) {
+        if (e.code === "ER_DUP_ENTRY") {
+        } else {
+            console.error(e.message);
+        }
+    }
 
     console.log('Startup tasks completed');
 }

@@ -22,6 +22,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
     const studentId = req.user.id;
     const { name, year_of_studying, batch, section, phone_no, skills } =
       req.body;
+
     let profile_photo;
     if (req.file) {
       // Create a new record in the "files" table to store the new photo
@@ -55,6 +56,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
       phone_no,
       profile_photo,
     };
+    console.log(updatedData)
     const student = await Student.findByIdAndUpdate(studentId, updatedData, {
       new: true,
       runValidators: true,
@@ -134,7 +136,8 @@ exports.updateStudent = catchAsync(async (req, res) => {
 exports.updateStudentByStaff = catchAsync(async (req, res) => {
   try {
     const studentId = req.params.id;
-    const {
+    console.log(req)
+    const { 
       name,
       year_of_studying,
       phone_no,
@@ -143,6 +146,7 @@ exports.updateStudentByStaff = catchAsync(async (req, res) => {
       placement_status,
       placed_company,
     } = req.body;
+    console.log(studentId, name);
     const updatedData = {
       name,
       year_of_studying,
@@ -152,6 +156,7 @@ exports.updateStudentByStaff = catchAsync(async (req, res) => {
       placement_status,
       placed_company,
     };
+    // console.log(req.body);
     const student = await Student.findByIdAndUpdate(studentId, updatedData, {
       new: true,
       runValidators: true,

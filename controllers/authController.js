@@ -739,9 +739,8 @@ exports.protect = catchAsync(async (req, res, next) => {
 
     next();
   } catch (e) {
-    const er = new AppError(e.message, 500);
-    er.sendResponse();
-    console.error(e);
+    const er = new AppError(e.message, 401);
+    er.sendResponse(res);
     return;
   }
 });

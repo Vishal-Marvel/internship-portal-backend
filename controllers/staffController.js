@@ -82,10 +82,23 @@ exports.viewMenteeStudents = catchAsync(async (req, res) => {
 
     // Wait for all student processing to complete
     const finalProcessedStudents = await Promise.all(processedStudents);
+    // Now filter
+    const currentYear = new Date().getFullYear();
+    const yearRanges = [];
+
+    for (let i = 1; i < 5; i++) {
+      const startYear = currentYear - i;
+      const endYear = startYear + 4;
+      yearRanges.push(`${startYear}-${endYear}`);
+    }
+
+    const filteredStudents = finalProcessedStudents.filter((student) => {
+      return yearRanges.includes(student.batch);
+    });
 
     res.status(200).json({
       data: {
-        students: finalProcessedStudents,
+        students: filteredStudents,
       },
     });
   } catch (error) {
@@ -487,12 +500,24 @@ exports.viewMultipleStudent = catchAsync(async (req, res) => {
 
     // Wait for all student processing to complete
     const finalProcessedStudents = await Promise.all(processedStudents);
+    // Now filter
+    const currentYear = new Date().getFullYear();
+    const yearRanges = [];
 
+    for (let i = 1; i < 5; i++) {
+      const startYear = currentYear - i;
+      const endYear = startYear + 4;
+      yearRanges.push(`${startYear}-${endYear}`);
+    }
+
+    const filteredStudents = finalProcessedStudents.filter((student) => {
+      return yearRanges.includes(student.batch);
+    });
     // Return the student details
     return res.status(200).json({
       status: "success",
       data: {
-        students: finalProcessedStudents,
+        students: filteredStudents,
       },
     });
   } catch (err) {

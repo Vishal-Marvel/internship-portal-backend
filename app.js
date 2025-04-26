@@ -12,6 +12,8 @@ const internshipRouter = require("./routes/internshipRouter");
 const adminRouter = require("./routes/adminRouter");
 const skillRouter = require("./routes/skillRouter");
 const app = express();
+const {decryptMiddleware, responseEncryptionMiddleware} = require("./utils/middleware");
+
 
 // app.enable("trust proxy");
 
@@ -35,7 +37,7 @@ const limit = rateLimit({
   message: "Too many request with this IP Address..Try again in 1 hour",
 });
 
-app.use("/internship/api", limit);
+app.use("/internship/api/v1", limit, decryptMiddleware, responseEncryptionMiddleware); // Apply rate limiting and decryption middleware to all routes
 
 app.use("/internship/api/v1/students", studentRouter);
 app.use("/internship/api/v1/staffs", staffRouter);
